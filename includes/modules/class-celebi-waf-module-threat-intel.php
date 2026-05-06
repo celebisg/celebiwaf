@@ -39,10 +39,17 @@ class CELEBI_WAF_Module_Threat_Intel {
         $score = 0;
         $source = 'local heuristics';
 
-        $manual = self::manual_feed();
-        if (isset($manual[$ip])) {
-            $score = max($score, intval($manual[$ip]['score']));
-            $source = 'manual ip reputation';
+        $manual = json_decode((string) get_option('celebi_waf_threat_manual_reputation', '[]'), true);
+        if (is_array($manual)) {
+            foreach ($manual as $row) {
+                if (is_array($row) && isset($row['ip']) && $row['ip'] === $ip) {
+                    $manual_score = max(0, min(100, intval($row['score'] ?? 0)));
+                    $manual_source = !empty($row['feed']) ? sanitize_text_field($row['feed']) : 'manual reputation';
+                    $result = ['score'=>$manual_score, 'source'=>$manual_source, 'action'=>sanitize_key($row['action'] ?? 'monitor')];
+                    set_transient($cache_key, $result, max(5, intval(get_option('celebi_waf_threat_cache_ttl', 360))) * MINUTE_IN_SECONDS);
+                    return $result;
+                }
+            }
         }
 
         // Basit reputation heuristics: sık görülen scanner ASN/IP feed entegrasyonu için temel.
@@ -68,34 +75,4 @@ class CELEBI_WAF_Module_Threat_Intel {
         set_transient($cache_key, $result, max(5, intval(get_option('celebi_waf_threat_cache_ttl', 360))) * MINUTE_IN_SECONDS);
         return $result;
     }
-
-    public static function manual_feed() {
-        $raw = get_option('celebi_waf_threat_manual_feed', '');
-        $rows = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $raw)));
-        $feed = [];
-        foreach ($rows as $row) {
-            if ($row === '' || strpos($row, '#') === 0) { continue; }
-            $parts = array_map('trim', explode('|', $row));
-            $ip = $parts[0] ?? '';
-            if (!filter_var($ip, FILTER_VALIDATE_IP)) { continue; }
-            $feed[$ip] = [
-                'ip' => $ip,
-                'feed' => sanitize_text_field($parts[1] ?? 'Manual Feed'),
-                'score' => max(0, min(100, intval($parts[2] ?? 90))),
-                'action' => sanitize_text_field($parts[3] ?? 'block'),
-                'note' => sanitize_text_field($parts[4] ?? '')
-            ];
-        }
-        return $feed;
-    }
-
-    public static function action_for_score($score) {
-        $score = intval($score);
-        $block = intval(get_option('celebi_waf_threat_block_threshold', 90));
-        $challenge = intval(get_option('celebi_waf_threat_challenge_threshold', 70));
-        if ($score >= $block) { return 'block'; }
-        if ($score >= $challenge) { return 'challenge'; }
-        return 'monitor';
-    }
-
 }

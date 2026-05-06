@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "Threat Intelligence IP Reputation tablosunda IP, Feed, Reputation ve Aksiyon alanlarının boş görünmesine neden olan veri kaynağı eksikliği giderildi.",
-    "Manuel IP reputation feed ekleme, güncelleme ve silme alanı eklendi.",
-    "IP Reputation listesi manuel feed, WAF olay logları ve mevcut IP testiyle otomatik doldurulur.",
-    "Threat Intelligence karar motoru manuel feed kayıtlarını skorlamaya dahil eder."
+    "Threat Intelligence > IP Reputation tablosundaki IP, Feed, Reputation ve Aksiyon alanlarının boş gelmesine neden olan veri üretim/render eksikliği düzeltildi.",
+    "Manuel IP reputation ekleme, güncelleme ve silme sistemi eklendi.",
+    "Liste manuel kayıtlar, son WAF logları ve mevcut IP reputation testiyle otomatik doldurulur.",
+    "Threat Intelligence motoru manuel reputation kayıtlarını karar skoru içine dahil eder."
   ]
 }

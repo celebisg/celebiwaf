@@ -19,7 +19,7 @@ function celebi_waf_update_banner_inline() {
 
 function celebi_waf_render_dashboard() { ?>
 <div class="wrap celebi-waf-wrap">
-<?php celebi_waf_header('CELEBI WAF v1.0.5', 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); celebi_waf_update_banner_inline(); ?>
+<?php celebi_waf_header('CELEBI WAF v1.0.6', 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); celebi_waf_update_banner_inline(); ?>
 <div class="celebi-waf-actions"><button class="button button-primary" id="celebi-refresh">Canlı Veriyi Yenile</button><button class="button" id="celebi-clear-logs">Logları Temizle</button><span id="celebi-status">Hazır</span></div>
 <div class="celebi-waf-cards">
 <div class="celebi-card"><span>Toplam Trafik</span><strong id="card-total">0</strong></div>
@@ -121,7 +121,7 @@ function celebi_waf_render_version_update() { ?>
 <div class="celebi-panel"><h2>Beklenen Manifest Formatı</h2><pre>{
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
   "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip"
@@ -186,11 +186,23 @@ function celebi_waf_render_threat_intel() { ?>
 193.
 198.
 89.248.")); ?></textarea></td></tr>
-    <tr><th>Manuel Reputation Feed</th><td><textarea id="threat-manual-feed" class="large-text code" rows="6" placeholder="IP|Feed|Reputation|Aksiyon|Not"><?php echo esc_textarea(get_option('celebi_waf_threat_manual_feed', '')); ?></textarea><p class="description">Format: <code>203.0.113.10|Abuse Feed|95|block|Brute force</code>. Bu alan alttaki tablo ile otomatik güncellenir.</p></td></tr>
   </table><button class="button button-primary" id="save-threat-intel">Threat Intelligence Ayarlarını Kaydet</button><button class="button" id="test-threat-intel">Mevcut IP Riskini Test Et</button><div class="celebi-result" id="threat-intel-result"></div></div>
-  <div class="celebi-panel"><h2>Operasyon Paneli</h2><ul class="feature-list"><li>IP, Feed, Reputation ve Aksiyon alanları artık canlı tabloya veritabanı/log/manual feed kaynaklarından doldurulur.</li><li>Feed URL doğrulama ve SSRF riskini azaltan güvenli URL kontrolü</li><li>IP reputation cache ile düşük gecikmeli karar üretimi</li><li>Challenge ve block eşiklerinin panelden düzenlenebilmesi</li><li>Riskli IP prefix listesini ortamınıza göre özelleştirme</li><li>Bot AI, WAF Motoru ve IP Challenge ile korelasyonlu çalışma</li></ul></div>
+  <div class="celebi-panel"><h2>Operasyon Paneli</h2><ul class="feature-list"><li>Feed URL doğrulama ve SSRF riskini azaltan güvenli URL kontrolü</li><li>IP reputation cache ile düşük gecikmeli karar üretimi</li><li>Challenge ve block eşiklerinin panelden düzenlenebilmesi</li><li>Riskli IP prefix listesini ortamınıza göre özelleştirme</li><li>Bot AI, WAF Motoru ve IP Challenge ile korelasyonlu çalışma</li></ul></div>
 </div>
-<div class="celebi-panel threat-reputation-panel"><h2>IP Reputation Canlı Liste</h2><p>Boş görünme sebebi genellikle manuel feed, harici feed veya log kaydı olmamasıdır. Aşağıdan manuel kayıt ekleyebilir, tabloyu yenileyebilir ve aksiyonu takip edebilirsiniz.</p><div class="threat-add-row"><input id="threat-rep-ip" placeholder="IP adresi"><input id="threat-rep-feed" placeholder="Feed adı" value="Manual Feed"><input id="threat-rep-score" type="number" min="0" max="100" value="90"><select id="threat-rep-action"><option value="monitor">monitor</option><option value="challenge">challenge</option><option value="block" selected>block</option></select><input id="threat-rep-note" placeholder="Not"><button class="button button-primary" id="add-threat-reputation">Ekle / Güncelle</button><button class="button" id="load-threat-reputation">Listeyi Yenile</button></div><table class="widefat striped"><thead><tr><th>IP</th><th>Feed</th><th>Reputation</th><th>Aksiyon</th><th>Kaynak / Not</th><th>İşlem</th></tr></thead><tbody id="threat-reputation-rows"><tr><td colspan="6">Liste yükleniyor...</td></tr></tbody></table></div>
+<div class="celebi-panel threat-reputation-panel">
+  <h2>Threat Intelligence ve IP Reputation</h2>
+  <p class="description">Bu liste manuel reputation kayıtları, son WAF logları, feed eşleşmeleri ve mevcut IP testinden beslenir. IP, Feed, Reputation ve Aksiyon alanları boş kalmaması için sistem varsayılan örnek kayıt ve log korelasyonu üretir.</p>
+  <div class="reputation-form">
+    <input type="text" id="rep-ip" placeholder="IP adresi örn: 203.0.113.10">
+    <input type="text" id="rep-feed" placeholder="Feed kaynağı örn: Manual SOC">
+    <input type="number" id="rep-score" min="0" max="100" value="75" placeholder="Reputation">
+    <select id="rep-action"><option value="monitor">İzle</option><option value="challenge">Challenge</option><option value="block">Block</option><option value="allow">Allow</option></select>
+    <input type="text" id="rep-note" placeholder="Not / açıklama">
+    <button class="button button-primary" id="save-threat-reputation">Kaydı Ekle / Güncelle</button>
+  </div>
+  <div class="celebi-result" id="threat-reputation-result"></div>
+  <div class="table-scroll"><table class="widefat striped"><thead><tr><th>IP</th><th>Feed</th><th>Reputation</th><th>Aksiyon</th><th>Kaynak</th><th>Son Güncelleme</th><th>İşlem</th></tr></thead><tbody id="threat-reputation-table"><tr><td colspan="7">Kayıtlar yükleniyor...</td></tr></tbody></table></div>
+</div>
 <div class="celebi-module-grid threat-cards"><div class="module-card sql-xss"><h3>Feed Eşleşmesi</h3><strong>95+</strong><ul><li>Harici kötü IP listeleri</li><li>Cache destekli sorgu</li><li>Otomatik block önerisi</li></ul></div><div class="module-card ip-challenge"><h3>Orta Risk</h3><strong>70+</strong><ul><li>Challenge aksiyonu</li><li>Davranışsal gözlem</li><li>Log korelasyonu</li></ul></div><div class="module-card async-log"><h3>Yerel Heuristics</h3><strong>Prefix</strong><ul><li>Düzenlenebilir IP prefixleri</li><li>Risk puanı toplama</li><li>Private IP filtreleme</li></ul></div></div>
 </div>
 <?php }

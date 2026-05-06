@@ -78,6 +78,10 @@ class CELEBI_WAF_DB {
         add_option('celebi_waf_edge_enabled', '1');
         add_option('celebi_waf_bot_ai_enabled', '1');
         add_option('celebi_waf_bot_ai_threshold', '75');
+        add_option('celebi_waf_threat_manual_reputation', wp_json_encode([
+            ['ip'=>'198.51.100.24','feed'=>'Demo Reputation Feed','score'=>72,'action'=>'challenge','note'=>'Örnek orta risk kaydı','updated_at'=>current_time('mysql')],
+            ['ip'=>'203.0.113.44','feed'=>'Demo Abuse Feed','score'=>94,'action'=>'block','note'=>'Örnek yüksek risk kaydı','updated_at'=>current_time('mysql')]
+        ]));
 
         self::seed_rules();
         if (!wp_next_scheduled('celebi_waf_flush_logs')) {
