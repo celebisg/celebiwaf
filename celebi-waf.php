@@ -1,15 +1,15 @@
 <?php
 /**
  * Plugin Name: CELEBI WAF
- * Description: CELEBI WAF v1.0.7 - Modüler WordPress WAF, Threat Intelligence, Bot AI, IP Challenge, rate limit, geo lookup, dashboard ve GitHub manifest tabanlı güncelleme sistemi.
- * Version: 1.0.7
+ * Description: CELEBI WAF v1.0.8 - Modüler WordPress WAF, Threat Intelligence, Bot AI, IP Challenge, rate limit, geo lookup, dashboard ve GitHub manifest tabanlı güncelleme sistemi.
+ * Version: 1.0.8
  * Author: CELEBI
  * Text Domain: celebi-waf
  */
 
 if (!defined('ABSPATH')) { exit; }
 
-define('CELEBI_WAF_VERSION', '1.0.7');
+define('CELEBI_WAF_VERSION', '1.0.8');
 define('CELEBI_WAF_PATH', plugin_dir_path(__FILE__));
 define('CELEBI_WAF_URL', plugin_dir_url(__FILE__));
 define('CELEBI_WAF_TABLE_PREFIX', 'celebi_waf_');

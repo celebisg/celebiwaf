@@ -19,8 +19,8 @@ function celebi_waf_update_banner_inline() {
 
 function celebi_waf_render_dashboard() { ?>
 <div class="wrap celebi-waf-wrap">
-<?php celebi_waf_header('CELEBI WAF v1.0.6', 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); celebi_waf_update_banner_inline(); ?>
-<div class="celebi-waf-actions"><button class="button button-primary" id="celebi-refresh">Canlı Veriyi Yenile</button><button class="button" id="celebi-clear-logs">Logları Temizle</button><span id="celebi-status">Hazır</span></div>
+<?php celebi_waf_header('CELEBI WAF v' . CELEBI_WAF_VERSION, 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); celebi_waf_update_banner_inline(); ?>
+<div class="celebi-waf-actions"><button class="button button-primary" id="celebi-refresh">Canlı Veriyi Yenile</button><button class="button" id="celebi-clear-logs">Logları Temizle</button><span id="celebi-status">Hazır</span><span class="celebi-live-dot">● Anlık izleme aktif</span></div>
 <div class="celebi-waf-cards">
 <div class="celebi-card"><span>Toplam Trafik</span><strong id="card-total">0</strong></div>
 <div class="celebi-card danger"><span>Engellenen/Challenge</span><strong id="card-blocked">0</strong></div>
@@ -121,7 +121,7 @@ function celebi_waf_render_version_update() { ?>
 <div class="celebi-panel"><h2>Beklenen Manifest Formatı</h2><pre>{
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
   "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip"
