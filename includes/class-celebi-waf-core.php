@@ -33,6 +33,7 @@ class CELEBI_WAF_Core {
         add_action('wp_ajax_celebi_waf_ip_rules', [$this, 'ajax_ip_rules']);
         add_action('wp_ajax_celebi_waf_add_ip_rule', [$this, 'ajax_add_ip_rule']);
         add_action('wp_ajax_celebi_waf_delete_ip_rule', [$this, 'ajax_delete_ip_rule']);
+        add_action('wp_ajax_celebi_waf_update_ip_rule_expiry', [$this, 'ajax_update_ip_rule_expiry']);
         add_action('wp_ajax_celebi_waf_logs', [$this, 'ajax_logs']);
         add_action('wp_ajax_celebi_waf_clear_logs', [$this, 'ajax_clear_logs']);
         add_action('wp_ajax_celebi_waf_save_settings', [$this, 'ajax_save_settings']);
@@ -214,6 +215,31 @@ class CELEBI_WAF_Core {
         $wpdb->delete(CELEBI_WAF_DB::ip_rules_table(), ['id'=>intval($_POST['id'] ?? 0)]);
         CELEBI_WAF_Utils::json_success('IP kuralı silindi.');
     }
+
+    public function ajax_update_ip_rule_expiry() {
+        CELEBI_WAF_Utils::admin_check();
+        global $wpdb;
+        $id = intval($_POST['id'] ?? 0);
+        $mode = sanitize_key($_POST['mode'] ?? 'minutes');
+        $minutes = max(1, min(525600, intval($_POST['minutes'] ?? 60)));
+        $expires_input = sanitize_text_field(wp_unslash($_POST['expires_at'] ?? ''));
+        $table = CELEBI_WAF_DB::ip_rules_table();
+        $rule = $wpdb->get_row($wpdb->prepare("SELECT id, rule_type FROM $table WHERE id=%d LIMIT 1", $id), ARRAY_A);
+        if (!$rule) { wp_send_json_error('IP kuralı bulunamadı.'); }
+        if ($mode === 'permanent' || $rule['rule_type'] === 'allow') {
+            $expires_at = null;
+        } elseif ($mode === 'exact' && $expires_input !== '') {
+            $timestamp = strtotime($expires_input);
+            if (!$timestamp) { wp_send_json_error('Geçerli bitiş tarihi girin.'); }
+            $expires_at = date('Y-m-d H:i:s', $timestamp);
+        } else {
+            $expires_at = date('Y-m-d H:i:s', current_time('timestamp') + $minutes * 60);
+        }
+        $updated = $wpdb->update($table, ['expires_at' => $expires_at], ['id' => $id], ['%s'], ['%d']);
+        if ($updated === false) { wp_send_json_error('Bitiş süresi güncellenemedi.'); }
+        CELEBI_WAF_Utils::json_success($expires_at ? 'Bitiş süresi güncellendi: ' . $expires_at : 'Kural süresiz hale getirildi.');
+    }
+
 
     public function ajax_logs() {
         CELEBI_WAF_Utils::admin_check();

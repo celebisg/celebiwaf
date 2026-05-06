@@ -56,7 +56,7 @@ function celebi_waf_render_challenge() { ?>
 <tr><th>Süre</th><td><input type="number" id="ip-rule-minutes" value="60"> dakika</td></tr>
 <tr><th>Not</th><td><input id="ip-rule-note" class="regular-text"></td></tr>
 </table><button class="button button-primary" id="save-ip-rule">Kaydet</button><div class="celebi-result" id="ip-rule-result"></div></div>
-<div class="celebi-panel"><h2>Aktif IP Kuralları</h2><button class="button" id="load-ip-rules">Yenile</button><table class="widefat striped"><thead><tr><th>IP</th><th>Tip</th><th>Not</th><th>Oluşturma</th><th>Bitiş</th><th>İşlem</th></tr></thead><tbody id="ip-rules"></tbody></table></div>
+<div class="celebi-panel"><h2>Aktif IP Kuralları</h2><p class="description">Her aktif IP kuralının bitiş süresini bu listeden dakika bazlı olarak uzatabilir, kısaltabilir veya süresiz hale getirebilirsiniz.</p><button class="button" id="load-ip-rules">Yenile</button><table class="widefat striped"><thead><tr><th>IP</th><th>Tip</th><th>Not</th><th>Oluşturma</th><th>Bitiş</th><th>Bitiş Süresi Düzenle</th><th>İşlem</th></tr></thead><tbody id="ip-rules"></tbody></table></div>
 </div>
 <?php }
 
