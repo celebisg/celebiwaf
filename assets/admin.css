@@ -14,3 +14,5 @@ body.toplevel_page_celebi-waf .wrap{max-width:1600px}.celebi-waf-wrap{padding:10
 .version-badge{display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;font-weight:700;background:#e5e7eb;color:#111827}
 .version-badge.ok{background:#dcfce7;color:#166534}.version-badge.warning{background:#fef3c7;color:#92400e}.version-badge.danger{background:#fee2e2;color:#991b1b}.version-badge.neutral{background:#e0f2fe;color:#075985}
 .version-result{white-space:pre-line;line-height:1.6}.version-health p{margin-top:10px;color:#64748b}
+
+.celebi-update-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0;padding:16px 18px;border-radius:18px;background:linear-gradient(135deg,#fff7ed,#fef3c7);border:1px solid #fed7aa;box-shadow:0 12px 30px rgba(180,83,9,.12)}.celebi-update-banner strong{display:block;font-size:18px;color:#9a3412}.celebi-update-banner span{display:block;margin-top:4px;color:#7c2d12}.celebi-update-banner .button{white-space:nowrap}.ip-expiry-editor input[type=datetime-local]{min-width:190px}.ip-expiry-editor input[type=number]{width:110px}

@@ -9,9 +9,17 @@ function celebi_waf_header($title, $desc) { ?>
     <div class="celebi-waf-header"><?php echo celebi_waf_logo_html(); ?><div><h1><?php echo esc_html($title); ?></h1><p class="celebi-waf-muted"><?php echo esc_html($desc); ?></p></div></div>
 <?php }
 
+function celebi_waf_update_banner_inline() {
+    if (!current_user_can('manage_options') || !class_exists('CELEBI_WAF_Core')) { return; }
+    $status = CELEBI_WAF_Core::instance()->get_update_status(true);
+    if (is_wp_error($status) || empty($status['update_available'])) { return; }
+    $url = admin_url('admin.php?page=celebi-waf-version-update');
+    echo '<div class="celebi-update-banner"><div><strong>Yeni Sürüm Bulundu</strong><span>Kurulu sürüm: ' . esc_html($status['current']) . ' | Son sürüm: ' . esc_html($status['latest']) . '</span></div><a class="button button-primary" href="' . esc_url($url) . '">Sürüm Güncellemesi Sekmesine Git</a></div>';
+}
+
 function celebi_waf_render_dashboard() { ?>
 <div class="wrap celebi-waf-wrap">
-<?php celebi_waf_header('CELEBI WAF v1.0.3', 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); ?>
+<?php celebi_waf_header('CELEBI WAF v1.0.5', 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); celebi_waf_update_banner_inline(); ?>
 <div class="celebi-waf-actions"><button class="button button-primary" id="celebi-refresh">Canlı Veriyi Yenile</button><button class="button" id="celebi-clear-logs">Logları Temizle</button><span id="celebi-status">Hazır</span></div>
 <div class="celebi-waf-cards">
 <div class="celebi-card"><span>Toplam Trafik</span><strong id="card-total">0</strong></div>
@@ -113,7 +121,7 @@ function celebi_waf_render_version_update() { ?>
 <div class="celebi-panel"><h2>Beklenen Manifest Formatı</h2><pre>{
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
   "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip"

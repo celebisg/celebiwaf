@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "Sürüm Güncellemesi ekranında GitHub .git repo adresi otomatik raw manifest adresine çevrilir.",
-    "Sürüm Kontrol Et butonu etkin raw manifest URL, paket URL ve yeni sürüm bilgisini ayrıntılı gösterir.",
-    "Güncelleme paketi açılırken WordPress dosya sistemi erişimi hatasına karşı ZipArchive tabanlı çıkarma eklendi.",
-    "Güncelleme yükleme akışı yazılabilir klasör, paket doğrulama ve dosya kopyalama kontrolleriyle güçlendirildi."
+    "IP Challenge aktif IP kurallarında Bitiş Süresi Düzenle alanı tüm kural tiplerinde aktif hale getirildi.",
+    "Bitiş süresi doğrudan tarih/saat ile kaydedilebilir, dakika bazlı uzatılabilir veya negatif değerle kısaltılabilir.",
+    "Dashboard ve CELEBI WAF ana ekranında yeni sürüm bulunduğunda görünür uyarı ve Sürüm Güncellemesi butonu eklendi.",
+    "Sürüm kontrol manifest okuma ve güncelleme uyarı akışı yeniden doğrulandı."
   ]
 }
