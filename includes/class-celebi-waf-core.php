@@ -326,6 +326,142 @@ class CELEBI_WAF_Core {
         CELEBI_WAF_Utils::json_success(['ip'=>$ip, 'score'=>$rep['score'], 'source'=>$rep['source']]);
     }
 
+
+
+    private function default_threat_reputation_rows() {
+        return [
+            ['ip'=>'198.51.100.24','feed'=>'Demo Reputation Feed','score'=>72,'action'=>'challenge','note'=>'Örnek orta risk kaydı','updated_at'=>current_time('mysql')],
+            ['ip'=>'203.0.113.44','feed'=>'Demo Abuse Feed','score'=>94,'action'=>'block','note'=>'Örnek yüksek risk kaydı','updated_at'=>current_time('mysql')],
+            ['ip'=>'192.0.2.15','feed'=>'Local SOC Watchlist','score'=>48,'action'=>'monitor','note'=>'Örnek izleme kaydı','updated_at'=>current_time('mysql')]
+        ];
+    }
+
+    private function get_manual_threat_reputation() {
+        $raw = get_option('celebi_waf_threat_manual_reputation', '');
+        $rows = json_decode((string) $raw, true);
+        if (!is_array($rows) || empty($rows)) {
+            $rows = $this->default_threat_reputation_rows();
+            update_option('celebi_waf_threat_manual_reputation', wp_json_encode($rows));
+        }
+        $clean = [];
+        foreach ($rows as $row) {
+            $ip = isset($row['ip']) ? sanitize_text_field($row['ip']) : '';
+            if (!filter_var($ip, FILTER_VALIDATE_IP)) { continue; }
+            $score = max(0, min(100, intval($row['score'] ?? $row['reputation'] ?? 0)));
+            $action = sanitize_key($row['action'] ?? 'monitor');
+            if (!in_array($action, ['allow','monitor','challenge','block'], true)) { $action = 'monitor'; }
+            $clean[] = [
+                'ip' => $ip,
+                'feed' => sanitize_text_field($row['feed'] ?? 'Manual SOC'),
+                'score' => $score,
+                'action' => $action,
+                'note' => sanitize_text_field($row['note'] ?? ''),
+                'updated_at' => sanitize_text_field($row['updated_at'] ?? current_time('mysql'))
+            ];
+        }
+        if (empty($clean)) {
+            $clean = $this->default_threat_reputation_rows();
+            update_option('celebi_waf_threat_manual_reputation', wp_json_encode($clean));
+        }
+        return $clean;
+    }
+
+    public function ajax_threat_reputation_list() {
+        CELEBI_WAF_Utils::admin_check();
+        global $wpdb;
+        $rows = [];
+        foreach ($this->get_manual_threat_reputation() as $row) {
+            $rows[] = [
+                'ip' => $row['ip'],
+                'feed' => $row['feed'],
+                'reputation' => intval($row['score']),
+                'action' => $row['action'],
+                'source' => 'Manuel / SOC',
+                'note' => $row['note'],
+                'updated_at' => $row['updated_at'],
+                'editable' => true
+            ];
+        }
+
+        $t = CELEBI_WAF_DB::events_table();
+        $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $t));
+        if ($exists === $t) {
+            $log_rows = $wpdb->get_results("SELECT ip, MAX(event_time) updated_at, MAX(risk_score) reputation, COUNT(*) hits, MAX(action) action FROM $t WHERE ip <> '' GROUP BY ip ORDER BY reputation DESC, hits DESC LIMIT 10", ARRAY_A);
+            foreach ((array) $log_rows as $lr) {
+                $ip = sanitize_text_field($lr['ip'] ?? '');
+                if (!filter_var($ip, FILTER_VALIDATE_IP)) { continue; }
+                $score = max(0, min(100, intval($lr['reputation'] ?? 0)));
+                $action = $score >= intval(get_option('celebi_waf_threat_block_threshold', 90)) ? 'block' : ($score >= intval(get_option('celebi_waf_threat_challenge_threshold', 70)) ? 'challenge' : 'monitor');
+                $rows[] = [
+                    'ip' => $ip,
+                    'feed' => 'WAF Log Korelasyonu',
+                    'reputation' => $score,
+                    'action' => $action,
+                    'source' => 'Log / ' . intval($lr['hits'] ?? 0) . ' olay',
+                    'note' => '',
+                    'updated_at' => sanitize_text_field($lr['updated_at'] ?? current_time('mysql')),
+                    'editable' => false
+                ];
+            }
+        }
+
+        $current_ip = CELEBI_WAF_Utils::ip();
+        if (filter_var($current_ip, FILTER_VALIDATE_IP)) {
+            $rep = CELEBI_WAF_Module_Threat_Intel::reputation($current_ip);
+            $score = max(0, min(100, intval($rep['score'] ?? 0)));
+            $rows[] = [
+                'ip' => $current_ip,
+                'feed' => sanitize_text_field($rep['source'] ?? 'Mevcut IP Testi'),
+                'reputation' => $score,
+                'action' => $score >= intval(get_option('celebi_waf_threat_block_threshold', 90)) ? 'block' : ($score >= intval(get_option('celebi_waf_threat_challenge_threshold', 70)) ? 'challenge' : 'monitor'),
+                'source' => 'Mevcut Yönetici IP',
+                'note' => '',
+                'updated_at' => current_time('mysql'),
+                'editable' => false
+            ];
+        }
+
+        $unique = [];
+        foreach ($rows as $row) {
+            $key = $row['ip'] . '|' . $row['feed'];
+            $unique[$key] = $row;
+        }
+        CELEBI_WAF_Utils::json_success(array_values($unique));
+    }
+
+    public function ajax_save_threat_reputation() {
+        CELEBI_WAF_Utils::admin_check();
+        $ip = sanitize_text_field(wp_unslash($_POST['ip'] ?? ''));
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) { wp_send_json_error('Geçerli bir IP adresi girin.'); }
+        $feed = sanitize_text_field(wp_unslash($_POST['feed'] ?? 'Manual SOC'));
+        $score = max(0, min(100, intval($_POST['score'] ?? 0)));
+        $action = sanitize_key(wp_unslash($_POST['rep_action'] ?? 'monitor'));
+        if (!in_array($action, ['allow','monitor','challenge','block'], true)) { $action = 'monitor'; }
+        $note = sanitize_text_field(wp_unslash($_POST['note'] ?? ''));
+        $rows = $this->get_manual_threat_reputation();
+        $found = false;
+        foreach ($rows as &$row) {
+            if ($row['ip'] === $ip) {
+                $row = ['ip'=>$ip,'feed'=>$feed ?: 'Manual SOC','score'=>$score,'action'=>$action,'note'=>$note,'updated_at'=>current_time('mysql')];
+                $found = true;
+                break;
+            }
+        }
+        unset($row);
+        if (!$found) { $rows[] = ['ip'=>$ip,'feed'=>$feed ?: 'Manual SOC','score'=>$score,'action'=>$action,'note'=>$note,'updated_at'=>current_time('mysql')]; }
+        update_option('celebi_waf_threat_manual_reputation', wp_json_encode($rows));
+        CELEBI_WAF_Utils::json_success($found ? 'IP reputation kaydı güncellendi.' : 'IP reputation kaydı eklendi.');
+    }
+
+    public function ajax_delete_threat_reputation() {
+        CELEBI_WAF_Utils::admin_check();
+        $ip = sanitize_text_field(wp_unslash($_POST['ip'] ?? ''));
+        $rows = array_values(array_filter($this->get_manual_threat_reputation(), function($row) use ($ip) { return $row['ip'] !== $ip; }));
+        if (empty($rows)) { $rows = $this->default_threat_reputation_rows(); }
+        update_option('celebi_waf_threat_manual_reputation', wp_json_encode($rows));
+        CELEBI_WAF_Utils::json_success('IP reputation kaydı silindi.');
+    }
+
     private function default_update_manifest_url() {
         return 'https://github.com/celebisg/celebiwaf.git';
     }

@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "Threat Intelligence > IP Reputation tablosundaki IP, Feed, Reputation ve Aksiyon alanlarının boş gelmesine neden olan veri üretim/render eksikliği düzeltildi.",
-    "Manuel IP reputation ekleme, güncelleme ve silme sistemi eklendi.",
-    "Liste manuel kayıtlar, son WAF logları ve mevcut IP reputation testiyle otomatik doldurulur.",
-    "Threat Intelligence motoru manuel reputation kayıtlarını karar skoru içine dahil eder."
+    "WordPress eklentiler ekranında iki ayrı CELEBI WAF görünmesine neden olan index.php plugin header kaldırıldı.",
+    "Threat Intelligence > IP Reputation AJAX listeleme eksikliği düzeltildi.",
+    "IP, Feed, Reputation ve Aksiyon alanları manuel kayıtlar, log korelasyonu ve mevcut IP testiyle otomatik doldurulur.",
+    "Manuel IP reputation ekleme, düzenleme ve silme işlemleri kalıcı option kaydıyla çalışır hale getirildi."
   ]
 }
