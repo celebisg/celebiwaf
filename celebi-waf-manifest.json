@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "Sürüm kontrol ekranında otomatik kontrol ve görünür güncelleme uyarısı düzeltildi.",
-    "Manifest okuma işlemi GitHub raw cache bypass ve ayrıntılı hata mesajlarıyla güçlendirildi.",
-    "Sürümü Kontrol Et butonu son sürüm, paket URL, yayın tarihi ve changelog bilgilerini doğru gösterir.",
-    "Güncellemeyi Yükle butonu yalnızca manifest sürümü kurulu sürümden yüksek olduğunda aktif olur."
+    "Sürüm Güncellemesi ekranında GitHub .git repo adresi otomatik raw manifest adresine çevrilir.",
+    "Sürüm Kontrol Et butonu etkin raw manifest URL, paket URL ve yeni sürüm bilgisini ayrıntılı gösterir.",
+    "Güncelleme paketi açılırken WordPress dosya sistemi erişimi hatasına karşı ZipArchive tabanlı çıkarma eklendi.",
+    "Güncelleme yükleme akışı yazılabilir klasör, paket doğrulama ve dosya kopyalama kontrolleriyle güçlendirildi."
   ]
 }

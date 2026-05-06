@@ -100,11 +100,11 @@ function celebi_waf_render_version_update() { ?>
 <div class="celebi-panel version-panel">
 <div class="version-hero">
   <div class="version-current"><span>Kurulu Sürüm</span><strong><?php echo esc_html(CELEBI_WAF_VERSION); ?></strong><em>CELEBI WAF</em></div>
-  <div class="version-health"><span id="version-health-badge" class="version-badge neutral">Kontrol bekleniyor</span><p>Manifest URL GitHub raw JSON dosyasını okumalıdır. Repo .git adresi girilirse otomatik raw manifest adresine çevrilir.</p></div>
+  <div class="version-health"><span id="version-health-badge" class="version-badge neutral">Kontrol bekleniyor</span><p>Manifest için GitHub repo adresi girilebilir; sistem bunu otomatik olarak raw JSON manifest adresine çevirir ve cache bypass ile okur.</p></div>
 </div>
 <table class="form-table">
 <tr><th>GitHub Repo</th><td><input class="regular-text" value="https://github.com/celebisg/celebiwaf.git" readonly><p class="description">Eklenti paketi ve manifest bu repo yapısına göre hazırlanmıştır.</p></td></tr>
-<tr><th>Manifest URL</th><td><input id="version-manifest-url" class="regular-text" value="<?php echo esc_attr(get_option('celebi_waf_update_manifest_url','https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json')); ?>" placeholder="https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json"><p class="description">Örnek: https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json</p></td></tr>
+<tr><th>Manifest URL</th><td><input id="version-manifest-url" class="regular-text" value="<?php echo esc_attr(get_option('celebi_waf_update_manifest_url','https://github.com/celebisg/celebiwaf.git')); ?>" placeholder="https://github.com/celebisg/celebiwaf.git"><p class="description">Repo URL yazabilirsiniz: https://github.com/celebisg/celebiwaf.git. Sistem arka planda raw manifest adresini kullanır.</p></td></tr>
 </table>
 <div class="version-actions"><button class="button" id="save-version-manifest">Manifest URL Kaydet</button><button class="button button-primary" id="check-version-update">Sürümü Kontrol Et</button><button class="button button-secondary" id="install-version-update" disabled>Güncellemeyi Yükle</button></div>
 <div class="celebi-result version-result" id="version-update-result">Sayfa açıldığında otomatik kontrol yapılır. Sonucu burada göreceksiniz.</div>
@@ -113,7 +113,7 @@ function celebi_waf_render_version_update() { ?>
 <div class="celebi-panel"><h2>Beklenen Manifest Formatı</h2><pre>{
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
   "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip"

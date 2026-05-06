@@ -2,14 +2,14 @@
 /**
  * Plugin Name: CELEBI WAF
  * Description: Modüler profesyonel WordPress WAF: dinamik kural motoru, bot analizi, IP challenge, rate limit, geo lookup, async loglama ve gelişmiş dashboard.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: CELEBI
  * Text Domain: celebi-waf
  */
 
 if (!defined('ABSPATH')) { exit; }
 
-define('CELEBI_WAF_VERSION', '1.0.3');
+define('CELEBI_WAF_VERSION', '1.0.4');
 define('CELEBI_WAF_PATH', plugin_dir_path(__FILE__));
 define('CELEBI_WAF_URL', plugin_dir_url(__FILE__));
 define('CELEBI_WAF_TABLE_PREFIX', 'celebi_waf_');

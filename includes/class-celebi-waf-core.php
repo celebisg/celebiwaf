@@ -318,6 +318,10 @@ class CELEBI_WAF_Core {
     }
 
     private function default_update_manifest_url() {
+        return 'https://github.com/celebisg/celebiwaf.git';
+    }
+
+    private function raw_update_manifest_url() {
         return 'https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json';
     }
 
@@ -327,14 +331,22 @@ class CELEBI_WAF_Core {
 
     private function normalize_manifest_url($url) {
         $url = trim((string) $url);
-        if ($url === 'https://github.com/celebisg/celebiwaf.git' || $url === 'https://github.com/celebisg/celebiwaf') {
-            return $this->default_update_manifest_url();
+        if ($url === '' || $url === 'https://github.com/celebisg/celebiwaf.git' || $url === 'https://github.com/celebisg/celebiwaf') {
+            return $this->raw_update_manifest_url();
+        }
+        if (preg_match('#^https://github\.com/([^/]+)/([^/.]+)(?:\.git)?/?$#i', $url, $m)) {
+            return 'https://raw.githubusercontent.com/' . sanitize_key($m[1]) . '/' . sanitize_key($m[2]) . '/main/celebi-waf-manifest.json';
         }
         return CELEBI_WAF_Utils::safe_remote_url($url);
     }
 
+    private function display_manifest_url() {
+        return get_option('celebi_waf_update_manifest_url', $this->default_update_manifest_url());
+    }
+
     private function read_update_manifest() {
-        $url = $this->normalize_manifest_url(get_option('celebi_waf_update_manifest_url', $this->default_update_manifest_url()));
+        $saved_url = get_option('celebi_waf_update_manifest_url', $this->default_update_manifest_url());
+        $url = $this->normalize_manifest_url($saved_url);
         if (!$url) { return new WP_Error('celebi_manifest_url', 'Manifest URL geçersiz.'); }
         $request_url = add_query_arg('cwaf_cache_bust', time(), $url);
         $response = wp_remote_get($request_url, [
@@ -381,7 +393,8 @@ class CELEBI_WAF_Core {
             'latest' => $latest,
             'update_available' => version_compare($latest, $current, '>'),
             'repo_url' => $json['repo_url'],
-            'manifest_url' => get_option('celebi_waf_update_manifest_url', $this->default_update_manifest_url()),
+            'manifest_url' => $this->display_manifest_url(),
+            'effective_manifest_url' => $json['manifest_url'],
             'download_url' => $json['download_url'],
             'package_url' => $json['package_url'],
             'requires_php' => $json['requires_php'],
@@ -396,8 +409,8 @@ class CELEBI_WAF_Core {
         CELEBI_WAF_Utils::admin_check();
         $url = $this->normalize_manifest_url(wp_unslash($_POST['manifest_url'] ?? ''));
         if (!$url) { $url = $this->default_update_manifest_url(); }
-        update_option('celebi_waf_update_manifest_url', $url);
-        CELEBI_WAF_Utils::json_success('Manifest URL kaydedildi: ' . $url);
+        update_option('celebi_waf_update_manifest_url', trim((string) wp_unslash($_POST['manifest_url'] ?? $this->default_update_manifest_url())));
+        CELEBI_WAF_Utils::json_success('Manifest URL kaydedildi. Etkin raw manifest: ' . $url);
     }
 
     public function ajax_check_version_update() {
@@ -422,24 +435,87 @@ class CELEBI_WAF_Core {
         $tmp = download_url($package, 30);
         if (is_wp_error($tmp)) { wp_send_json_error('Paket indirilemedi: ' . $tmp->get_error_message()); }
         $upgrade_dir = trailingslashit(WP_CONTENT_DIR) . 'upgrade/celebi-waf-' . time();
-        wp_mkdir_p($upgrade_dir);
-        $unzipped = unzip_file($tmp, $upgrade_dir);
+        if (!wp_mkdir_p($upgrade_dir) || !is_dir($upgrade_dir) || !is_writable($upgrade_dir)) {
+            @unlink($tmp);
+            wp_send_json_error('Geçici güncelleme klasörü yazılabilir değil: ' . $upgrade_dir);
+        }
+
+        $unzipped = $this->extract_zip_without_wp_filesystem($tmp, $upgrade_dir);
         @unlink($tmp);
         if (is_wp_error($unzipped)) { wp_send_json_error('Paket açılamadı: ' . $unzipped->get_error_message()); }
-        $candidates = glob($upgrade_dir . '/*/celebi-waf.php');
-        if (!$candidates) { $candidates = glob($upgrade_dir . '/celebi-waf.php'); }
-        if (!$candidates || !is_readable($candidates[0])) { wp_send_json_error('Paket içinde celebi-waf.php bulunamadı.'); }
-        $plugin_file = $candidates[0];
+
+        $plugin_file = $this->find_plugin_file($upgrade_dir);
+        if (!$plugin_file || !is_readable($plugin_file)) { wp_send_json_error('Paket içinde celebi-waf.php bulunamadı. Paket URL GitHub main.zip veya eklenti ZIP dosyası olmalıdır.'); }
         $headers = get_file_data($plugin_file, ['Plugin Name'=>'Plugin Name', 'Version'=>'Version']);
         if (stripos($headers['Plugin Name'], 'CELEBI WAF') === false) { wp_send_json_error('Paket doğrulaması başarısız: Plugin Name eşleşmedi.'); }
         if (!empty($headers['Version']) && version_compare($headers['Version'], CELEBI_WAF_VERSION, '<=')) { wp_send_json_error('Paket sürümü kurulu sürümden yeni değil.'); }
+
         $source_dir = trailingslashit(dirname($plugin_file));
         $dest_dir = CELEBI_WAF_PATH;
-        global $wp_filesystem;
-        if (!$wp_filesystem) { WP_Filesystem(); }
-        $copied = copy_dir($source_dir, $dest_dir, ['.git', '.github', 'node_modules']);
+        if (!is_dir($dest_dir) || !is_writable($dest_dir)) { wp_send_json_error('Eklenti klasörü yazılabilir değil: ' . $dest_dir . ' Sunucuda dosya izinlerini veya sahipliği kontrol edin.'); }
+        $copied = $this->recursive_copy_update($source_dir, $dest_dir, ['.git', '.github', 'node_modules']);
         if (is_wp_error($copied)) { wp_send_json_error('Dosyalar kopyalanamadı: ' . $copied->get_error_message()); }
-        CELEBI_WAF_Utils::json_success('Güncelleme yüklendi. WordPress eklentiler sayfasından eklentiyi yeniden etkinleştirmeniz gerekebilir.');
+        delete_site_transient('update_plugins');
+        CELEBI_WAF_Utils::json_success('Güncelleme başarıyla yüklendi. Yeni sürüm: ' . $json['version'] . '. Sayfayı yenileyip sürümü tekrar kontrol edebilirsiniz.');
+    }
+
+
+    private function extract_zip_without_wp_filesystem($zip_file, $destination) {
+        if (class_exists('ZipArchive')) {
+            $zip = new ZipArchive();
+            $opened = $zip->open($zip_file);
+            if ($opened === true) {
+                $ok = $zip->extractTo($destination);
+                $zip->close();
+                return $ok ? true : new WP_Error('celebi_zip_extract', 'ZipArchive paketi açamadı.');
+            }
+        }
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        global $wp_filesystem;
+        if (!$wp_filesystem) {
+            WP_Filesystem(false, WP_CONTENT_DIR, true);
+        }
+        return unzip_file($zip_file, $destination);
+    }
+
+    private function find_plugin_file($base_dir) {
+        $base_dir = untrailingslashit($base_dir);
+        $direct = $base_dir . '/celebi-waf.php';
+        if (is_readable($direct)) { return $direct; }
+        $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base_dir, FilesystemIterator::SKIP_DOTS));
+        foreach ($rii as $file) {
+            if ($file->isFile() && $file->getFilename() === 'celebi-waf.php') {
+                return $file->getPathname();
+            }
+        }
+        return false;
+    }
+
+    private function recursive_copy_update($source, $destination, $exclude = []) {
+        $source = trailingslashit($source);
+        $destination = trailingslashit($destination);
+        $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($rii as $item) {
+            $name = $item->getFilename();
+            if (in_array($name, $exclude, true)) { continue; }
+            $relative = substr($item->getPathname(), strlen($source));
+            $target = $destination . $relative;
+            if ($item->isDir()) {
+                if (!is_dir($target) && !wp_mkdir_p($target)) {
+                    return new WP_Error('celebi_copy_mkdir', 'Klasör oluşturulamadı: ' . $target);
+                }
+            } else {
+                $parent = dirname($target);
+                if (!is_dir($parent) && !wp_mkdir_p($parent)) {
+                    return new WP_Error('celebi_copy_parent', 'Hedef klasör oluşturulamadı: ' . $parent);
+                }
+                if (!@copy($item->getPathname(), $target)) {
+                    return new WP_Error('celebi_copy_file', 'Dosya kopyalanamadı: ' . $relative);
+                }
+                @chmod($target, 0644);
+            }
+        }
+        return true;
     }
 
     public function ajax_saas_test() {

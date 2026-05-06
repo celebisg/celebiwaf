@@ -34,7 +34,7 @@ $(document).on('click','#save-version-manifest',()=>{$.post(CELEBIWAF.ajax,{acti
 function celebiRenderVersionResult(d){
   let hasUpdate=!!d.update_available;
   $('#version-health-badge').removeClass('neutral ok warning danger').addClass(hasUpdate?'warning':'ok').text(hasUpdate?'Yeni sürüm mevcut':'Güncel');
-  let lines=['Kurulu sürüm: '+d.current,'Son sürüm: '+d.latest,hasUpdate?'Yeni sürüm mevcut. Güncellemeyi yükleyebilirsiniz.':'Güncelleme gerekmiyor.','Repo: '+(d.repo_url||''),'Manifest: '+(d.manifest_url||'')];
+  let lines=['Kurulu sürüm: '+d.current,'Son sürüm: '+d.latest,hasUpdate?'Yeni sürüm mevcut. Güncellemeyi yükleyebilirsiniz.':'Güncelleme gerekmiyor.','Repo: '+(d.repo_url||''),'Manifest alanı: '+(d.manifest_url||''),'Etkin raw manifest: '+(d.effective_manifest_url||'')];
   if(d.download_url)lines.push('İndirme URL: '+d.download_url);
   if(d.package_url)lines.push('Paket URL: '+d.package_url);
   if(d.requires_php)lines.push('Gerekli PHP: '+d.requires_php);
