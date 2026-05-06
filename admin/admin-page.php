@@ -121,7 +121,7 @@ function celebi_waf_render_version_update() { ?>
 <div class="celebi-panel"><h2>Beklenen Manifest Formatı</h2><pre>{
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
   "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip"

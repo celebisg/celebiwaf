@@ -52,6 +52,13 @@ class CELEBI_WAF_Core {
     }
 
     public function inspect_request() {
+        // CELEBI WAF'in kendi admin-ajax çağrılarını asla WAF denetiminden geçirmeyin.
+        // Canlı dashboard 3 saniyede bir admin-ajax.php çağırdığı için bot/rate-limit modülleri
+        // bu istekleri yanlışlıkla challenge/block edebiliyor ve panelde AJAX hatası oluşuyordu.
+        if (wp_doing_ajax()) {
+            $ajax_action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash($_REQUEST['action'])) : '';
+            if (strpos($ajax_action, 'celebi_waf_') === 0) { return; }
+        }
         if (is_admin() && !wp_doing_ajax()) { return; }
         if (defined('DOING_CRON') && DOING_CRON) { return; }
         if (get_option('celebi_waf_enabled', '1') !== '1') { return; }
@@ -118,6 +125,7 @@ class CELEBI_WAF_Core {
 
     public function ajax_stats() {
         CELEBI_WAF_Utils::admin_check();
+        CELEBI_WAF_DB::maybe_upgrade();
         CELEBI_WAF_Logger::flush();
         global $wpdb;
         $t = CELEBI_WAF_DB::events_table();
@@ -146,6 +154,7 @@ class CELEBI_WAF_Core {
 
     public function ajax_modules() {
         CELEBI_WAF_Utils::admin_check();
+        CELEBI_WAF_DB::maybe_upgrade();
         global $wpdb;
         $t = CELEBI_WAF_DB::events_table();
         $data = [
@@ -164,6 +173,7 @@ class CELEBI_WAF_Core {
 
     public function ajax_rules() {
         CELEBI_WAF_Utils::admin_check();
+        CELEBI_WAF_DB::maybe_upgrade();
         global $wpdb;
         CELEBI_WAF_Utils::json_success($wpdb->get_results("SELECT * FROM " . CELEBI_WAF_DB::rules_table() . " ORDER BY id DESC", ARRAY_A));
     }
@@ -199,6 +209,7 @@ class CELEBI_WAF_Core {
 
     public function ajax_ip_rules() {
         CELEBI_WAF_Utils::admin_check();
+        CELEBI_WAF_DB::maybe_upgrade();
         global $wpdb;
         CELEBI_WAF_Utils::json_success($wpdb->get_results("SELECT * FROM " . CELEBI_WAF_DB::ip_rules_table() . " ORDER BY id DESC LIMIT 200", ARRAY_A));
     }
@@ -252,6 +263,7 @@ class CELEBI_WAF_Core {
 
     public function ajax_logs() {
         CELEBI_WAF_Utils::admin_check();
+        CELEBI_WAF_DB::maybe_upgrade();
         CELEBI_WAF_Logger::flush();
         global $wpdb;
         $where = "WHERE 1=1";
@@ -368,6 +380,7 @@ class CELEBI_WAF_Core {
 
     public function ajax_threat_reputation_list() {
         CELEBI_WAF_Utils::admin_check();
+        CELEBI_WAF_DB::maybe_upgrade();
         global $wpdb;
         $rows = [];
         foreach ($this->get_manual_threat_reputation() as $row) {

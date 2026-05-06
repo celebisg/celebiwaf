@@ -6,6 +6,15 @@ class CELEBI_WAF_DB {
     public static function rules_table() { global $wpdb; return $wpdb->prefix . 'celebi_waf_rules'; }
     public static function ip_rules_table() { global $wpdb; return $wpdb->prefix . 'celebi_waf_ip_rules'; }
 
+
+    public static function maybe_upgrade() {
+        $installed = get_option('celebi_waf_db_version', '0');
+        if ($installed !== CELEBI_WAF_VERSION) {
+            self::activate();
+            update_option('celebi_waf_db_version', CELEBI_WAF_VERSION, false);
+        }
+    }
+
     public static function activate() {
         global $wpdb;
         $charset = $wpdb->get_charset_collate();
