@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "Dashboard kartları artık sunucu tarafında ilk yükleme anında doldurulur ve AJAX çalışmasa bile boş görünmez.",
-    "Toplam Trafik, Engellenen/Challenge, Son 1 Saat, Bot Olayları, IP Challenge ve Aktif Kurallar sayaçları güvenli tablo kontrolüyle canlı güncellenir.",
-    "Threat Intelligence üst akış kartları IP, Feed, Reputation ve Aksiyon değerlerini gerçek reputation kayıtlarından gösterir.",
-    "IP Reputation tablosu AJAX beklemeden sunucu tarafı varsayılan kayıtlarla görünür gelir; AJAX başarılı olunca canlı verilerle yenilenir."
+    "CELEBI WAF ve Dashboard sayaçlarının sunucu tarafı ve AJAX tarafı aynı güvenli metrik kaynağıyla dolması sağlandı.",
+    "Canlı Modül İstatistikleri kartları WAF Motoru, Trafik İzleme, SQL/XSS, Bot, DDoS, IP Challenge, Kural Motoru, Async Loglama ve Geo Lookup için dolu değerlerle render edilir.",
+    "Gelişmiş Bot AI ve Threat Intelligence akış kartlarında İstek, Fingerprint, Skor, Aksiyon, IP, Feed ve Reputation alanlarının boş/bitisik görünmesi düzeltildi.",
+    "CELEBI WAF, Dashboard, Canlı Modüller, Bot AI ve Threat Intelligence veri alanlarına sabit ayrı renk düzeni uygulandı."
   ]
 }

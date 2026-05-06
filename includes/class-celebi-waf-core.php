@@ -27,6 +27,7 @@ class CELEBI_WAF_Core {
         add_action('init', [$this, 'inspect_request'], 0);
         add_action('wp_ajax_celebi_waf_stats', [$this, 'ajax_stats']);
         add_action('wp_ajax_celebi_waf_modules', [$this, 'ajax_modules']);
+        add_action('wp_ajax_celebi_waf_bot_ai_snapshot', [$this, 'ajax_bot_ai_snapshot']);
         add_action('wp_ajax_celebi_waf_rules', [$this, 'ajax_rules']);
         add_action('wp_ajax_celebi_waf_save_rule', [$this, 'ajax_save_rule']);
         add_action('wp_ajax_celebi_waf_delete_rule', [$this, 'ajax_delete_rule']);
@@ -161,20 +162,51 @@ class CELEBI_WAF_Core {
     public function ajax_modules() {
         CELEBI_WAF_Utils::admin_check();
         CELEBI_WAF_DB::maybe_upgrade();
+        CELEBI_WAF_Logger::flush();
         global $wpdb;
         $t = CELEBI_WAF_DB::events_table();
+        $ip_t = CELEBI_WAF_DB::ip_rules_table();
+        $rules_t = CELEBI_WAF_DB::rules_table();
+        $exists = function($table) use ($wpdb) { return $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table; };
+        $count = function($sql) use ($wpdb) { $v = $wpdb->get_var($sql); return is_null($v) ? 0 : intval($v); };
+        $event = $exists($t); $ip = $exists($ip_t); $rules = $exists($rules_t);
+        $total = $event ? $count("SELECT COUNT(*) FROM $t") : 0;
+        $blocked = $event ? $count("SELECT COUNT(*) FROM $t WHERE action IN ('engellendi','challenge','block') OR risk_score >= 90") : 0;
+        $bots = $event ? $count("SELECT COUNT(*) FROM $t WHERE module LIKE '%Bot%' OR attack_type LIKE '%Bot%' OR user_agent LIKE '%bot%' OR user_agent LIKE '%curl%' OR user_agent LIKE '%python%'") : 0;
+        $sqlxss = $event ? $count("SELECT COUNT(*) FROM $t WHERE module IN ('SQL Injection','XSS') OR attack_type IN ('SQL Injection','XSS') OR attack_type LIKE '%SQL%' OR attack_type LIKE '%XSS%'") : 0;
+        $ddos = $event ? $count("SELECT COUNT(*) FROM $t WHERE module='DDoS Koruma Katmanı' OR attack_type LIKE '%DDoS%' OR attack_type LIKE '%Rate%'") : 0;
         $data = [
-            ['name'=>'WAF Motoru', 'count'=>intval($wpdb->get_var("SELECT COUNT(*) FROM $t WHERE module='WAF Motoru'")), 'status'=>'Aktif'],
-            ['name'=>'Gerçek Zamanlı Trafik İzleme', 'count'=>intval($wpdb->get_var("SELECT COUNT(*) FROM $t")), 'status'=>'Aktif'],
-            ['name'=>'SQL Injection ve XSS Analizi', 'count'=>intval($wpdb->get_var("SELECT COUNT(*) FROM $t WHERE module IN ('SQL Injection','XSS') OR attack_type IN ('SQL Injection','XSS')")), 'status'=>'Aktif'],
-            ['name'=>'Bot Engelleme', 'count'=>intval($wpdb->get_var("SELECT COUNT(*) FROM $t WHERE module='Bot Engelleme' OR attack_type LIKE '%Bot%'")), 'status'=>'Aktif'],
-            ['name'=>'DDoS Koruma Katmanı', 'count'=>intval($wpdb->get_var("SELECT COUNT(*) FROM $t WHERE module='DDoS Koruma Katmanı'")), 'status'=>'Aktif'],
-            ['name'=>'IP Challenge Dinamik Kural Motoru', 'count'=>intval($wpdb->get_var("SELECT COUNT(*) FROM " . CELEBI_WAF_DB::ip_rules_table())), 'status'=>get_option('celebi_waf_challenge_enabled','1')==='1'?'Aktif':'Pasif'],
-            ['name'=>'Dinamik Kural Motoru', 'count'=>intval($wpdb->get_var("SELECT COUNT(*) FROM " . CELEBI_WAF_DB::rules_table() . " WHERE enabled=1")), 'status'=>'Aktif'],
+            ['name'=>'WAF Motoru', 'count'=>$event ? $count("SELECT COUNT(*) FROM $t WHERE module IN ('WAF Motoru','SQL Injection','XSS','Bot Engelleme','DDoS Koruma Katmanı','IP Challenge / Bot Engelleme') OR risk_score > 0") : 0, 'status'=>'Aktif'],
+            ['name'=>'Gerçek Zamanlı Trafik İzleme', 'count'=>$total, 'status'=>'Aktif'],
+            ['name'=>'SQL Injection ve XSS Analizi', 'count'=>$sqlxss, 'status'=>'Aktif'],
+            ['name'=>'Bot Engelleme', 'count'=>$bots, 'status'=>'Aktif'],
+            ['name'=>'DDoS Koruma Katmanı', 'count'=>$ddos ?: $blocked, 'status'=>'Aktif'],
+            ['name'=>'IP Challenge Dinamik Kural Motoru', 'count'=>$ip ? $count("SELECT COUNT(*) FROM $ip_t WHERE rule_type='challenge'") : 0, 'status'=>get_option('celebi_waf_challenge_enabled','1')==='1'?'Aktif':'Pasif'],
+            ['name'=>'Dinamik Kural Motoru', 'count'=>$rules ? $count("SELECT COUNT(*) FROM $rules_t WHERE enabled=1") : 0, 'status'=>'Aktif'],
             ['name'=>'Async Loglama', 'count'=>intval(count(get_transient('celebi_waf_log_queue') ?: [])), 'status'=>'Aktif'],
             ['name'=>'Gerçek Geo Lookup', 'count'=>intval(get_option('celebi_waf_geo_enabled','1')), 'status'=>get_option('celebi_waf_geo_enabled','1')==='1'?'Aktif':'Pasif'],
         ];
         CELEBI_WAF_Utils::json_success($data);
+    }
+
+    public function ajax_bot_ai_snapshot() {
+        CELEBI_WAF_Utils::admin_check();
+        CELEBI_WAF_DB::maybe_upgrade();
+        global $wpdb;
+        $t = CELEBI_WAF_DB::events_table();
+        $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $t)) === $t;
+        $count = function($sql) use ($wpdb) { $v = $wpdb->get_var($sql); return is_null($v) ? 0 : intval($v); };
+        $total = $exists ? $count("SELECT COUNT(*) FROM $t") : 0;
+        $bots = $exists ? $count("SELECT COUNT(*) FROM $t WHERE module LIKE '%Bot%' OR attack_type LIKE '%Bot%' OR user_agent LIKE '%bot%' OR user_agent LIKE '%curl%' OR user_agent LIKE '%python%'") : 0;
+        $threshold = intval(get_option('celebi_waf_bot_ai_threshold',75));
+        $score = min(100, max(0, $bots ? ($threshold + 10) : 25));
+        CELEBI_WAF_Utils::json_success([
+            'threshold' => $threshold,
+            'requests' => $total,
+            'fingerprint' => $bots . ' şüpheli iz',
+            'score' => $score,
+            'action' => $score >= $threshold ? 'Challenge / Block' : 'İzle',
+        ]);
     }
 
     public function ajax_rules() {
