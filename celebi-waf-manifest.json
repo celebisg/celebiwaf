@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "CELEBI WAF ve Dashboard sayaçlarının sunucu tarafı ve AJAX tarafı aynı güvenli metrik kaynağıyla dolması sağlandı.",
-    "Canlı Modül İstatistikleri kartları WAF Motoru, Trafik İzleme, SQL/XSS, Bot, DDoS, IP Challenge, Kural Motoru, Async Loglama ve Geo Lookup için dolu değerlerle render edilir.",
-    "Gelişmiş Bot AI ve Threat Intelligence akış kartlarında İstek, Fingerprint, Skor, Aksiyon, IP, Feed ve Reputation alanlarının boş/bitisik görünmesi düzeltildi.",
-    "CELEBI WAF, Dashboard, Canlı Modüller, Bot AI ve Threat Intelligence veri alanlarına sabit ayrı renk düzeni uygulandı."
+    "Gelişmiş Bot AI veri kartları İstek, Fingerprint, Skor ve Aksiyon için sabit ayrı renkli gradient yapıya dönüştürüldü.",
+    "Enterprise Modüller kartları Merkezi Yönetim Paneli, Threat Intelligence, Nginx Edge-Level ve Gelişmiş Bot AI için sabit ayrı renklerle ayrıştırıldı.",
+    "Threat Intelligence ve IP Reputation üst veri alanları IP, Feed, Reputation ve Aksiyon için sabit ayrı renkli dolu kart tasarımına geçirildi.",
+    "CSS çakışmalarına karşı !important öncelikli güvenli görünüm katmanı eklendi ve paket bütünlüğü yeniden doğrulandı."
   ]
 }

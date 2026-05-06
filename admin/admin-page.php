@@ -254,10 +254,10 @@ function celebi_waf_render_docs() { ?>
 function celebi_waf_render_enterprise() { ?>
 <div class="wrap celebi-waf-wrap"><?php celebi_waf_header('CELEBI WAF v4 Enterprise Modüller', 'SaaS merkezi panel, Threat Intelligence, Nginx Edge-Level, IP reputation engine ve gelişmiş Bot AI yönetimi.'); ?>
 <div class="celebi-module-grid">
-<div class="module-card"><h3>Merkezi Yönetim Paneli</h3><strong><?php echo get_option('celebi_waf_saas_enabled','0')==='1'?'Aktif':'Pasif'; ?></strong><span>SaaS API bağlantısı</span></div>
-<div class="module-card"><h3>Threat Intelligence</h3><strong><?php echo get_option('celebi_waf_threat_intel_enabled','1')==='1'?'Aktif':'Pasif'; ?></strong><span>IP reputation</span></div>
-<div class="module-card"><h3>Nginx Edge-Level</h3><strong><?php echo get_option('celebi_waf_edge_enabled','1')==='1'?'Aktif':'Pasif'; ?></strong><span>Kural çıktısı</span></div>
-<div class="module-card"><h3>Gelişmiş Bot AI</h3><strong><?php echo esc_html(get_option('celebi_waf_bot_ai_threshold',75)); ?></strong><span>Risk eşiği</span></div>
+<div class="module-card enterprise-saas-card"><h3>Merkezi Yönetim Paneli</h3><strong><?php echo get_option('celebi_waf_saas_enabled','0')==='1'?'Aktif':'Pasif'; ?></strong><span>SaaS API bağlantısı</span></div>
+<div class="module-card enterprise-threat-card"><h3>Threat Intelligence</h3><strong><?php echo get_option('celebi_waf_threat_intel_enabled','1')==='1'?'Aktif':'Pasif'; ?></strong><span>IP reputation</span></div>
+<div class="module-card enterprise-edge-card"><h3>Nginx Edge-Level</h3><strong><?php echo get_option('celebi_waf_edge_enabled','1')==='1'?'Aktif':'Pasif'; ?></strong><span>Kural çıktısı</span></div>
+<div class="module-card enterprise-bot-card"><h3>Gelişmiş Bot AI</h3><strong><?php echo esc_html(get_option('celebi_waf_bot_ai_threshold',75)); ?></strong><span>Risk eşiği</span></div>
 </div>
 <div class="celebi-panel"><h2>Enterprise Ayarları</h2><table class="form-table">
 <tr><th>SaaS Modülü</th><td><label><input type="checkbox" id="ent-saas-enabled" <?php checked(get_option('celebi_waf_saas_enabled','0'),'1'); ?>> Aktif</label></td></tr>
