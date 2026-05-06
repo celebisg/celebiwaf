@@ -1,0 +1,19 @@
+{
+  "name": "CELEBI WAF",
+  "slug": "celebi-waf",
+  "version": "1.0.1",
+  "repo_url": "https://github.com/celebisg/celebiwaf.git",
+  "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
+  "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
+  "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "tested_wp": "6.5",
+  "release_date": "2026-05-06",
+  "changelog": [
+    "GitHub manifest tabanlı sürüm kontrol ekranı eklendi.",
+    "Yeni sürüm bulunduğunda yönetici uyarısı ve yükleme butonu aktif olur.",
+    "Paket URL, plugin adı ve paket sürümü doğrulama kontrolleri eklendi.",
+    "Sürüm numarası 1.0.0 başlangıç serisine alındı."
+  ]
+}
