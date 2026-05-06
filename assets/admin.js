@@ -37,6 +37,7 @@ function loadThreatReputation(){
   $.post(CELEBIWAF.ajax,{action:'celebi_waf_threat_reputation_list',nonce:CELEBIWAF.nonce},r=>{
     if(!r.success){$('#threat-reputation-table').html('<tr><td colspan="7">'+esc(r.data||'Liste yüklenemedi')+'</td></tr>');return;}
     let rows=r.data||[];
+    if(rows.length){let top=rows.slice().sort((a,b)=>Number(b.reputation||0)-Number(a.reputation||0))[0];$('#threat-hero-ip').text(top.ip||'-');$('#threat-hero-feed').text(top.feed||'-');$('#threat-hero-reputation').text(top.reputation||0);$('#threat-hero-action').text(top.action||'monitor');}
     $('#threat-reputation-table').html(rows.map(x=>'<tr><td>'+esc(x.ip)+'</td><td>'+esc(x.feed||'-')+'</td><td><strong>'+esc(x.reputation)+'</strong></td><td><span class="pill '+esc(x.action)+'">'+esc(x.action)+'</span></td><td>'+esc(x.source||'-')+'</td><td>'+esc(x.updated_at||'-')+'</td><td>'+(x.editable?'<button class="button edit-threat-reputation" data-row=\''+esc(JSON.stringify(x))+'\'>Düzenle</button> <button class="button delete-threat-reputation" data-ip="'+esc(x.ip)+'">Sil</button>':'<span class="description">Log/veri kaynağı</span>')+'</td></tr>').join('')||'<tr><td colspan="7">Henüz kayıt yok. Manuel kayıt ekleyebilir veya site trafiği oluşmasını bekleyebilirsiniz.</td></tr>');
   });
 }

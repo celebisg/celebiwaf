@@ -130,25 +130,31 @@ class CELEBI_WAF_Core {
         global $wpdb;
         $t = CELEBI_WAF_DB::events_table();
         $ip_t = CELEBI_WAF_DB::ip_rules_table();
+        $rules_t = CELEBI_WAF_DB::rules_table();
+        $table_exists = function($table) use ($wpdb) { return $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table; };
+        $event_exists = $table_exists($t);
+        $ip_exists = $table_exists($ip_t);
+        $rules_exists = $table_exists($rules_t);
+        $count = function($sql) use ($wpdb) { $v = $wpdb->get_var($sql); return is_null($v) ? 0 : intval($v); };
 
         $cards = [
-            'total' => intval($wpdb->get_var("SELECT COUNT(*) FROM $t")),
-            'blocked' => intval($wpdb->get_var("SELECT COUNT(*) FROM $t WHERE action IN ('engellendi','challenge')")),
-            'last_hour' => intval($wpdb->get_var("SELECT COUNT(*) FROM $t WHERE event_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)")),
-            'bots' => intval($wpdb->get_var("SELECT COUNT(*) FROM $t WHERE module LIKE '%Bot%' OR attack_type LIKE '%Bot%'")),
-            'ip_challenge' => intval($wpdb->get_var("SELECT COUNT(*) FROM $ip_t WHERE rule_type='challenge'")),
-            'rules' => intval($wpdb->get_var("SELECT COUNT(*) FROM " . CELEBI_WAF_DB::rules_table() . " WHERE enabled=1"))
+            'total' => $event_exists ? $count("SELECT COUNT(*) FROM $t") : 0,
+            'blocked' => $event_exists ? $count("SELECT COUNT(*) FROM $t WHERE action IN ('engellendi','challenge','block')") : 0,
+            'last_hour' => $event_exists ? $count("SELECT COUNT(*) FROM $t WHERE event_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)") : 0,
+            'bots' => $event_exists ? $count("SELECT COUNT(*) FROM $t WHERE module LIKE '%Bot%' OR attack_type LIKE '%Bot%'") : 0,
+            'ip_challenge' => $ip_exists ? $count("SELECT COUNT(*) FROM $ip_t WHERE rule_type='challenge'") : 0,
+            'rules' => $rules_exists ? $count("SELECT COUNT(*) FROM $rules_t WHERE enabled=1") : 0,
         ];
 
         CELEBI_WAF_Utils::json_success([
             'cards' => $cards,
-            'timeline' => $wpdb->get_results("SELECT DATE_FORMAT(event_time, '%H:%i') label, COUNT(*) value FROM $t WHERE event_time >= DATE_SUB(NOW(), INTERVAL 12 HOUR) GROUP BY DATE_FORMAT(event_time, '%Y-%m-%d %H:%i') ORDER BY MIN(event_time) ASC LIMIT 80", ARRAY_A),
-            'types' => $wpdb->get_results("SELECT attack_type label, COUNT(*) value FROM $t GROUP BY attack_type ORDER BY value DESC LIMIT 10", ARRAY_A),
-            'countries' => $wpdb->get_results("SELECT country label, COUNT(*) value FROM $t GROUP BY country ORDER BY value DESC LIMIT 10", ARRAY_A),
-            'top_ips' => $wpdb->get_results("SELECT ip label, COUNT(*) value FROM $t GROUP BY ip ORDER BY value DESC LIMIT 10", ARRAY_A),
-            'top_urls' => $wpdb->get_results("SELECT uri label, COUNT(*) value FROM $t GROUP BY uri ORDER BY value DESC LIMIT 10", ARRAY_A),
-            'map' => $wpdb->get_results("SELECT country, lat, lng, COUNT(*) count FROM $t WHERE lat IS NOT NULL AND lng IS NOT NULL GROUP BY country, lat, lng ORDER BY count DESC LIMIT 50", ARRAY_A),
-            'events' => $wpdb->get_results("SELECT * FROM $t ORDER BY id DESC LIMIT 25", ARRAY_A),
+            'timeline' => $event_exists ? $wpdb->get_results("SELECT DATE_FORMAT(event_time, '%H:%i') label, COUNT(*) value FROM $t WHERE event_time >= DATE_SUB(NOW(), INTERVAL 12 HOUR) GROUP BY DATE_FORMAT(event_time, '%Y-%m-%d %H:%i') ORDER BY MIN(event_time) ASC LIMIT 80", ARRAY_A) : [],
+            'types' => $event_exists ? $wpdb->get_results("SELECT COALESCE(NULLIF(attack_type,''),'Normal Trafik') label, COUNT(*) value FROM $t GROUP BY label ORDER BY value DESC LIMIT 10", ARRAY_A) : [],
+            'countries' => $event_exists ? $wpdb->get_results("SELECT COALESCE(NULLIF(country,''),'Bilinmiyor') label, COUNT(*) value FROM $t GROUP BY label ORDER BY value DESC LIMIT 10", ARRAY_A) : [],
+            'top_ips' => $event_exists ? $wpdb->get_results("SELECT ip label, COUNT(*) value FROM $t WHERE ip <> '' GROUP BY ip ORDER BY value DESC LIMIT 10", ARRAY_A) : [],
+            'top_urls' => $event_exists ? $wpdb->get_results("SELECT uri label, COUNT(*) value FROM $t WHERE uri <> '' GROUP BY uri ORDER BY value DESC LIMIT 10", ARRAY_A) : [],
+            'map' => $event_exists ? $wpdb->get_results("SELECT country, lat, lng, COUNT(*) count FROM $t WHERE lat IS NOT NULL AND lng IS NOT NULL GROUP BY country, lat, lng ORDER BY count DESC LIMIT 50", ARRAY_A) : [],
+            'events' => $event_exists ? $wpdb->get_results("SELECT * FROM $t ORDER BY id DESC LIMIT 25", ARRAY_A) : [],
         ]);
     }
 

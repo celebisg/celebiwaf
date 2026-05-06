@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "Admin AJAX çağrılarının WAF tarafından yanlışlıkla challenge/block edilmesine neden olan akış düzeltildi.",
-    "Dashboard canlı istatistik istekleri, sürüm kontrol istekleri ve Threat Intelligence AJAX çağrıları WAF denetiminden muaf tutuldu.",
-    "Güncelleme sonrası aktivasyon çalışmadan eksik kalabilecek veritabanı tabloları için otomatik DB kontrol/onarım eklendi.",
-    "Chart.js veya Leaflet CDN yüklenmezse dashboard AJAX akışının kırılmaması için güvenli JS kontrolleri eklendi."
+    "Dashboard kartları artık sunucu tarafında ilk yükleme anında doldurulur ve AJAX çalışmasa bile boş görünmez.",
+    "Toplam Trafik, Engellenen/Challenge, Son 1 Saat, Bot Olayları, IP Challenge ve Aktif Kurallar sayaçları güvenli tablo kontrolüyle canlı güncellenir.",
+    "Threat Intelligence üst akış kartları IP, Feed, Reputation ve Aksiyon değerlerini gerçek reputation kayıtlarından gösterir.",
+    "IP Reputation tablosu AJAX beklemeden sunucu tarafı varsayılan kayıtlarla görünür gelir; AJAX başarılı olunca canlı verilerle yenilenir."
   ]
 }

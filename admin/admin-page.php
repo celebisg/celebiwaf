@@ -9,6 +9,83 @@ function celebi_waf_header($title, $desc) { ?>
     <div class="celebi-waf-header"><?php echo celebi_waf_logo_html(); ?><div><h1><?php echo esc_html($title); ?></h1><p class="celebi-waf-muted"><?php echo esc_html($desc); ?></p></div></div>
 <?php }
 
+
+
+function celebi_waf_count_table_safe($table, $where = '') {
+    global $wpdb;
+    $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+    if ($exists !== $table) { return 0; }
+    $sql = "SELECT COUNT(*) FROM {$table}" . ($where ? " WHERE {$where}" : '');
+    return intval($wpdb->get_var($sql));
+}
+
+function celebi_waf_dashboard_snapshot() {
+    if (class_exists('CELEBI_WAF_DB')) { CELEBI_WAF_DB::maybe_upgrade(); }
+    global $wpdb;
+    $events = CELEBI_WAF_DB::events_table();
+    $rules = CELEBI_WAF_DB::rules_table();
+    $ip_rules = CELEBI_WAF_DB::ip_rules_table();
+    return [
+        'total' => celebi_waf_count_table_safe($events),
+        'blocked' => celebi_waf_count_table_safe($events, "action IN ('engellendi','challenge','block')"),
+        'last_hour' => celebi_waf_count_table_safe($events, "event_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)"),
+        'bots' => celebi_waf_count_table_safe($events, "module LIKE '%Bot%' OR attack_type LIKE '%Bot%'"),
+        'ip_challenge' => celebi_waf_count_table_safe($ip_rules, "rule_type='challenge'"),
+        'rules' => celebi_waf_count_table_safe($rules, "enabled=1"),
+    ];
+}
+
+function celebi_waf_threat_reputation_snapshot() {
+    $raw = get_option('celebi_waf_threat_manual_reputation', '');
+    $rows = json_decode((string) $raw, true);
+    if (!is_array($rows) || empty($rows)) {
+        $rows = [
+            ['ip'=>'198.51.100.24','feed'=>'Demo Reputation Feed','score'=>72,'action'=>'challenge','note'=>'Örnek orta risk kaydı','updated_at'=>current_time('mysql')],
+            ['ip'=>'203.0.113.44','feed'=>'Demo Abuse Feed','score'=>94,'action'=>'block','note'=>'Örnek yüksek risk kaydı','updated_at'=>current_time('mysql')],
+            ['ip'=>'192.0.2.15','feed'=>'Local SOC Watchlist','score'=>48,'action'=>'monitor','note'=>'Örnek izleme kaydı','updated_at'=>current_time('mysql')],
+        ];
+        update_option('celebi_waf_threat_manual_reputation', wp_json_encode($rows), false);
+    }
+    $clean = [];
+    foreach ((array) $rows as $row) {
+        $ip = sanitize_text_field($row['ip'] ?? '');
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) { continue; }
+        $score = max(0, min(100, intval($row['score'] ?? $row['reputation'] ?? 0)));
+        $action = sanitize_key($row['action'] ?? 'monitor');
+        if (!in_array($action, ['allow','monitor','challenge','block'], true)) { $action = 'monitor'; }
+        $clean[] = [
+            'ip' => $ip,
+            'feed' => sanitize_text_field($row['feed'] ?? 'Manual SOC'),
+            'reputation' => $score,
+            'action' => $action,
+            'source' => 'Manuel / SOC',
+            'note' => sanitize_text_field($row['note'] ?? ''),
+            'updated_at' => sanitize_text_field($row['updated_at'] ?? current_time('mysql')),
+            'editable' => true,
+        ];
+    }
+    usort($clean, function($a,$b){ return intval($b['reputation']) <=> intval($a['reputation']); });
+    return $clean;
+}
+
+function celebi_waf_render_threat_reputation_rows() {
+    $rows = celebi_waf_threat_reputation_snapshot();
+    if (empty($rows)) {
+        echo '<tr><td colspan="7">Henüz kayıt yok.</td></tr>';
+        return;
+    }
+    foreach ($rows as $x) {
+        echo '<tr>';
+        echo '<td>' . esc_html($x['ip']) . '</td>';
+        echo '<td>' . esc_html($x['feed']) . '</td>';
+        echo '<td><strong>' . esc_html($x['reputation']) . '</strong></td>';
+        echo '<td><span class="pill ' . esc_attr($x['action']) . '">' . esc_html($x['action']) . '</span></td>';
+        echo '<td>' . esc_html($x['source']) . '</td>';
+        echo '<td>' . esc_html($x['updated_at']) . '</td>';
+        echo '<td><button class="button edit-threat-reputation" data-row=\'' . esc_attr(wp_json_encode($x)) . '\'>Düzenle</button> <button class="button delete-threat-reputation" data-ip="' . esc_attr($x['ip']) . '">Sil</button></td>';
+        echo '</tr>';
+    }
+}
 function celebi_waf_update_banner_inline() {
     if (!current_user_can('manage_options') || !class_exists('CELEBI_WAF_Core')) { return; }
     $status = CELEBI_WAF_Core::instance()->get_update_status(true);
@@ -17,17 +94,17 @@ function celebi_waf_update_banner_inline() {
     echo '<div class="celebi-update-banner"><div><strong>Yeni Sürüm Bulundu</strong><span>Kurulu sürüm: ' . esc_html($status['current']) . ' | Son sürüm: ' . esc_html($status['latest']) . '</span></div><a class="button button-primary" href="' . esc_url($url) . '">Sürüm Güncellemesi Sekmesine Git</a></div>';
 }
 
-function celebi_waf_render_dashboard() { ?>
+function celebi_waf_render_dashboard() { $cards = celebi_waf_dashboard_snapshot(); ?>
 <div class="wrap celebi-waf-wrap">
 <?php celebi_waf_header('CELEBI WAF v' . CELEBI_WAF_VERSION, 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); celebi_waf_update_banner_inline(); ?>
 <div class="celebi-waf-actions"><button class="button button-primary" id="celebi-refresh">Canlı Veriyi Yenile</button><button class="button" id="celebi-clear-logs">Logları Temizle</button><span id="celebi-status">Hazır</span><span class="celebi-live-dot">● Anlık izleme aktif</span></div>
 <div class="celebi-waf-cards">
-<div class="celebi-card"><span>Toplam Trafik</span><strong id="card-total">0</strong></div>
-<div class="celebi-card danger"><span>Engellenen/Challenge</span><strong id="card-blocked">0</strong></div>
-<div class="celebi-card"><span>Son 1 Saat</span><strong id="card-hour">0</strong></div>
-<div class="celebi-card warning"><span>Bot Olayları</span><strong id="card-bots">0</strong></div>
-<div class="celebi-card info"><span>IP Challenge</span><strong id="card-challenge">0</strong></div>
-<div class="celebi-card brand"><span>Aktif Kurallar</span><strong id="card-rules">0</strong></div>
+<div class="celebi-card"><span>Toplam Trafik</span><strong id="card-total"><?php echo esc_html($cards['total']); ?></strong></div>
+<div class="celebi-card danger"><span>Engellenen/Challenge</span><strong id="card-blocked"><?php echo esc_html($cards['blocked']); ?></strong></div>
+<div class="celebi-card"><span>Son 1 Saat</span><strong id="card-hour"><?php echo esc_html($cards['last_hour']); ?></strong></div>
+<div class="celebi-card warning"><span>Bot Olayları</span><strong id="card-bots"><?php echo esc_html($cards['bots']); ?></strong></div>
+<div class="celebi-card info"><span>IP Challenge</span><strong id="card-challenge"><?php echo esc_html($cards['ip_challenge']); ?></strong></div>
+<div class="celebi-card brand"><span>Aktif Kurallar</span><strong id="card-rules"><?php echo esc_html($cards['rules']); ?></strong></div>
 </div>
 <div class="celebi-grid">
 <div class="celebi-panel"><h2>Saldırı Zaman Çizelgesi</h2><canvas id="chartTimeline"></canvas></div>
@@ -168,11 +245,11 @@ function celebi_waf_render_saas() { ?>
 </div>
 <?php }
 
-function celebi_waf_render_threat_intel() { ?>
+function celebi_waf_render_threat_intel() { $rep_rows = celebi_waf_threat_reputation_snapshot(); $top_rep = $rep_rows[0] ?? ['ip'=>'-', 'feed'=>'-', 'reputation'=>0, 'action'=>'monitor']; ?>
 <div class="wrap celebi-waf-wrap"><?php celebi_waf_header('Threat Intelligence ve IP Reputation', 'Düzenlenebilir feed, eşik, prefix, cache ve aksiyon politikaları ile gelişmiş IP reputation merkezi.'); ?>
 <div class="threat-hero">
   <div class="threat-score"><span>Block Eşiği</span><strong><?php echo esc_html(get_option('celebi_waf_threat_block_threshold',90)); ?></strong><em>Yüksek riskli IP karar noktası</em></div>
-  <div class="threat-flow"><div>IP</div><div>Feed</div><div>Reputation</div><div>Aksiyon</div></div>
+  <div class="threat-flow"><div><span>IP</span><strong id="threat-hero-ip"><?php echo esc_html($top_rep['ip']); ?></strong></div><div><span>Feed</span><strong id="threat-hero-feed"><?php echo esc_html($top_rep['feed']); ?></strong></div><div><span>Reputation</span><strong id="threat-hero-reputation"><?php echo esc_html($top_rep['reputation']); ?></strong></div><div><span>Aksiyon</span><strong id="threat-hero-action"><?php echo esc_html($top_rep['action']); ?></strong></div></div>
 </div>
 <div class="celebi-grid threat-grid">
   <div class="celebi-panel"><h2>Threat Intelligence Ayarları</h2><table class="form-table">
@@ -201,7 +278,7 @@ function celebi_waf_render_threat_intel() { ?>
     <button class="button button-primary" id="save-threat-reputation">Kaydı Ekle / Güncelle</button>
   </div>
   <div class="celebi-result" id="threat-reputation-result"></div>
-  <div class="table-scroll"><table class="widefat striped"><thead><tr><th>IP</th><th>Feed</th><th>Reputation</th><th>Aksiyon</th><th>Kaynak</th><th>Son Güncelleme</th><th>İşlem</th></tr></thead><tbody id="threat-reputation-table"><tr><td colspan="7">Kayıtlar yükleniyor...</td></tr></tbody></table></div>
+  <div class="table-scroll"><table class="widefat striped"><thead><tr><th>IP</th><th>Feed</th><th>Reputation</th><th>Aksiyon</th><th>Kaynak</th><th>Son Güncelleme</th><th>İşlem</th></tr></thead><tbody id="threat-reputation-table"><?php celebi_waf_render_threat_reputation_rows(); ?></tbody></table></div>
 </div>
 <div class="celebi-module-grid threat-cards"><div class="module-card sql-xss"><h3>Feed Eşleşmesi</h3><strong>95+</strong><ul><li>Harici kötü IP listeleri</li><li>Cache destekli sorgu</li><li>Otomatik block önerisi</li></ul></div><div class="module-card ip-challenge"><h3>Orta Risk</h3><strong>70+</strong><ul><li>Challenge aksiyonu</li><li>Davranışsal gözlem</li><li>Log korelasyonu</li></ul></div><div class="module-card async-log"><h3>Yerel Heuristics</h3><strong>Prefix</strong><ul><li>Düzenlenebilir IP prefixleri</li><li>Risk puanı toplama</li><li>Private IP filtreleme</li></ul></div></div>
 </div>
