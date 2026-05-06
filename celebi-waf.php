@@ -2,14 +2,14 @@
 /**
  * Plugin Name: CELEBI WAF
  * Description: Modüler profesyonel WordPress WAF: dinamik kural motoru, bot analizi, IP challenge, rate limit, geo lookup, async loglama ve gelişmiş dashboard.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: CELEBI
  * Text Domain: celebi-waf
  */
 
 if (!defined('ABSPATH')) { exit; }
 
-define('CELEBI_WAF_VERSION', '1.0.2');
+define('CELEBI_WAF_VERSION', '1.0.3');
 define('CELEBI_WAF_PATH', plugin_dir_path(__FILE__));
 define('CELEBI_WAF_URL', plugin_dir_url(__FILE__));
 define('CELEBI_WAF_TABLE_PREFIX', 'celebi_waf_');
@@ -73,4 +73,16 @@ add_action('admin_enqueue_scripts', function ($hook) {
         'ajax' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('celebi_waf_nonce')
     ]);
+});
+
+
+add_action('admin_notices', function () {
+    if (!current_user_can('manage_options')) { return; }
+    if (!class_exists('CELEBI_WAF_Core')) { return; }
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    if (!$screen || strpos($screen->id, 'celebi-waf') === false) { return; }
+    $check = CELEBI_WAF_Core::instance()->get_update_status(true);
+    if (is_wp_error($check) || empty($check['update_available'])) { return; }
+    $url = admin_url('admin.php?page=celebi-waf-version-update');
+    echo '<div class="notice notice-warning is-dismissible"><p><strong>CELEBI WAF:</strong> Yeni sürüm mevcut: ' . esc_html($check['latest']) . ' <a href="' . esc_url($url) . '">Sürüm Güncellemesi ekranına git</a></p></div>';
 });

@@ -10,3 +10,7 @@ body.toplevel_page_celebi-waf .wrap{max-width:1600px}.celebi-waf-wrap{padding:10
 .version-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.version-grid{margin-top:18px}.update-panel code{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:3px 7px}.button[disabled]{opacity:.55;cursor:not-allowed}.celebi-result{white-space:pre-wrap}
 
 .ip-expiry-editor{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.ip-expiry-editor input{width:86px}.ip-expiry-editor .button{margin:0}.pill.challenge{background:#0891b2;color:#fff;padding:4px 9px;border-radius:999px}.pill.block{background:#dc2626;color:#fff;padding:4px 9px;border-radius:999px}.pill.allow{background:#16a34a;color:#fff;padding:4px 9px;border-radius:999px}
+
+.version-badge{display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;font-weight:700;background:#e5e7eb;color:#111827}
+.version-badge.ok{background:#dcfce7;color:#166534}.version-badge.warning{background:#fef3c7;color:#92400e}.version-badge.danger{background:#fee2e2;color:#991b1b}.version-badge.neutral{background:#e0f2fe;color:#075985}
+.version-result{white-space:pre-line;line-height:1.6}.version-health p{margin-top:10px;color:#64748b}

@@ -31,7 +31,28 @@ $(document).on('click','#load-edge-rules',()=>{$.post(CELEBIWAF.ajax,{action:'ce
 $(document).on('click','#save-threat-intel',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_save_threat_intel',nonce:CELEBIWAF.nonce,enabled:$('#threat-enabled').is(':checked')?1:0,feed_url:$('#threat-feed-url').val(),challenge_threshold:$('#threat-challenge-threshold').val(),block_threshold:$('#threat-block-threshold').val(),cache_ttl:$('#threat-cache-ttl').val(),prefixes:$('#threat-prefixes').val()},r=>$('#threat-intel-result').show().text(r.success?r.data:r.data));});
 $(document).on('click','#test-threat-intel',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_test_threat_intel',nonce:CELEBIWAF.nonce},r=>$('#threat-intel-result').show().text(r.success?JSON.stringify(r.data,null,2):r.data));});
 $(document).on('click','#save-version-manifest',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_save_version_manifest',nonce:CELEBIWAF.nonce,manifest_url:$('#version-manifest-url').val()},r=>$('#version-update-result').show().text(r.success?r.data:r.data));});
-$(document).on('click','#check-version-update',()=>{$('#install-version-update').prop('disabled',true);$('#version-update-result').show().text('Sürüm bilgisi kontrol ediliyor...');$.post(CELEBIWAF.ajax,{action:'celebi_waf_check_version_update',nonce:CELEBIWAF.nonce},r=>{if(!r.success){$('#version-update-result').show().text(r.data);return;}let d=r.data;let lines=['Kurulu sürüm: '+d.current,'Son sürüm: '+d.latest,d.update_available?'Yeni sürüm mevcut.':'Güncelleme gerekmiyor.','Repo: '+(d.repo_url||''),'Manifest: '+(d.manifest_url||'')];if(d.download_url)lines.push('İndirme URL: '+d.download_url);if(d.requires_php)lines.push('Gerekli PHP: '+d.requires_php);if(d.requires_wp)lines.push('Gerekli WordPress: '+d.requires_wp);if(d.changelog&&d.changelog.length)lines.push('Notlar:\n- '+d.changelog.join('\n- '));$('#install-version-update').prop('disabled',!d.update_available);$('#version-update-result').show().text(lines.filter(Boolean).join('\n'));});});
+function celebiRenderVersionResult(d){
+  let hasUpdate=!!d.update_available;
+  $('#version-health-badge').removeClass('neutral ok warning danger').addClass(hasUpdate?'warning':'ok').text(hasUpdate?'Yeni sürüm mevcut':'Güncel');
+  let lines=['Kurulu sürüm: '+d.current,'Son sürüm: '+d.latest,hasUpdate?'Yeni sürüm mevcut. Güncellemeyi yükleyebilirsiniz.':'Güncelleme gerekmiyor.','Repo: '+(d.repo_url||''),'Manifest: '+(d.manifest_url||'')];
+  if(d.download_url)lines.push('İndirme URL: '+d.download_url);
+  if(d.package_url)lines.push('Paket URL: '+d.package_url);
+  if(d.requires_php)lines.push('Gerekli PHP: '+d.requires_php);
+  if(d.requires_wp)lines.push('Gerekli WordPress: '+d.requires_wp);
+  if(d.tested_wp)lines.push('Test edilen WordPress: '+d.tested_wp);
+  if(d.release_date)lines.push('Yayın tarihi: '+d.release_date);
+  if(d.changelog&&d.changelog.length)lines.push('Notlar:\n- '+d.changelog.join('\n- '));
+  $('#install-version-update').prop('disabled',!hasUpdate);
+  $('#version-update-result').show().text(lines.filter(Boolean).join('\n'));
+}
+function celebiCheckVersion(){
+  $('#install-version-update').prop('disabled',true);
+  $('#version-health-badge').removeClass('ok warning danger').addClass('neutral').text('Kontrol ediliyor');
+  $('#version-update-result').show().text('Sürüm bilgisi kontrol ediliyor...');
+  $.post(CELEBIWAF.ajax,{action:'celebi_waf_check_version_update',nonce:CELEBIWAF.nonce},r=>{if(!r.success){$('#version-health-badge').removeClass('neutral ok warning').addClass('danger').text('Kontrol hatası');$('#version-update-result').show().text(r.data);return;}celebiRenderVersionResult(r.data);}).fail(xhr=>{$('#version-health-badge').removeClass('neutral ok warning').addClass('danger').text('AJAX hatası');$('#version-update-result').show().text('AJAX isteği başarısız: '+xhr.status+' '+xhr.statusText);});
+}
+$(document).on('click','#check-version-update',celebiCheckVersion);
+$(function(){if($('#version-update-result').length){celebiCheckVersion();}});
 $(document).on('click','#install-version-update',()=>{if(!confirm('Yeni sürüm indirilecek ve eklenti dosyalarının üzerine yazılacak. Devam edilsin mi?'))return;$('#version-update-result').show().text('Güncelleme paketi indiriliyor ve yükleniyor...');$.post(CELEBIWAF.ajax,{action:'celebi_waf_install_version_update',nonce:CELEBIWAF.nonce},r=>{$('#version-update-result').show().text(r.success?r.data:r.data);});});
 
 })(jQuery);

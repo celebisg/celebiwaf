@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "IP Challenge aktif IP kuralları listesine bitiş süresi düzenleme alanı eklendi.",
-    "IP kuralları dakika bazlı uzatılabilir/kısaltılabilir ve süresiz hale getirilebilir.",
-    "GitHub manifest tabanlı güncelleme yapısı 1.0.2 sürümü için güncellendi.",
-    "Paket GitHub ana dizinine yüklenebilir yapı ile hazırlandı."
+    "Sürüm kontrol ekranında otomatik kontrol ve görünür güncelleme uyarısı düzeltildi.",
+    "Manifest okuma işlemi GitHub raw cache bypass ve ayrıntılı hata mesajlarıyla güçlendirildi.",
+    "Sürümü Kontrol Et butonu son sürüm, paket URL, yayın tarihi ve changelog bilgilerini doğru gösterir.",
+    "Güncellemeyi Yükle butonu yalnızca manifest sürümü kurulu sürümden yüksek olduğunda aktif olur."
   ]
 }

@@ -11,7 +11,7 @@ function celebi_waf_header($title, $desc) { ?>
 
 function celebi_waf_render_dashboard() { ?>
 <div class="wrap celebi-waf-wrap">
-<?php celebi_waf_header('CELEBI WAF v1.0.0', 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); ?>
+<?php celebi_waf_header('CELEBI WAF v1.0.3', 'Yeni nesil gerçek zamanlı tehdit analizi, gelişmiş modül yönetimi ve canlı güvenlik merkezi.'); ?>
 <div class="celebi-waf-actions"><button class="button button-primary" id="celebi-refresh">Canlı Veriyi Yenile</button><button class="button" id="celebi-clear-logs">Logları Temizle</button><span id="celebi-status">Hazır</span></div>
 <div class="celebi-waf-cards">
 <div class="celebi-card"><span>Toplam Trafik</span><strong id="card-total">0</strong></div>
@@ -96,26 +96,29 @@ function celebi_waf_render_settings() { ?>
 <?php }
 
 function celebi_waf_render_version_update() { ?>
-<div class="wrap celebi-waf-wrap"><?php celebi_waf_header('Sürüm Güncellemesi', 'GitHub manifest üzerinden sürüm kontrolü, uyarı ve güvenli paket yükleme merkezi.'); ?>
+<div class="wrap celebi-waf-wrap"><?php celebi_waf_header('Sürüm Güncellemesi', 'GitHub manifest dosyasından canlı sürüm kontrolü, uyarı ve güvenli yükleme yönetimi.'); ?>
+<div class="celebi-panel version-panel">
 <div class="version-hero">
   <div class="version-current"><span>Kurulu Sürüm</span><strong><?php echo esc_html(CELEBI_WAF_VERSION); ?></strong><em>CELEBI WAF</em></div>
-  <div class="celebi-panel update-panel"><h2>GitHub Sürüm Kontrolü</h2><p><strong>Repo:</strong> <code>https://github.com/celebisg/celebiwaf.git</code></p><p>Manifest URL, GitHub deposundaki JSON dosyasını okuyarak son sürümü kontrol eder. Yeni sürüm bulunduğunda uyarı gösterilir ve paket yükleme işlemi başlatılabilir.</p><table class="form-table">
-    <tr><th>Manifest URL</th><td><input id="version-manifest-url" class="regular-text" value="<?php echo esc_attr(get_option('celebi_waf_update_manifest_url','https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json')); ?>" placeholder="https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json"><p class="description">GitHub raw JSON manifest adresi kullanılır. .git repo adresi girilirse otomatik manifest adresine çevrilir.</p></td></tr>
-  </table><div class="version-actions"><button class="button" id="save-version-manifest">Manifest URL Kaydet</button><button class="button button-primary" id="check-version-update">Sürümü Kontrol Et</button><button class="button button-secondary" id="install-version-update" disabled>Güncellemeyi Yükle</button></div><div class="celebi-result" id="version-update-result"></div></div>
+  <div class="version-health"><span id="version-health-badge" class="version-badge neutral">Kontrol bekleniyor</span><p>Manifest URL GitHub raw JSON dosyasını okumalıdır. Repo .git adresi girilirse otomatik raw manifest adresine çevrilir.</p></div>
+</div>
+<table class="form-table">
+<tr><th>GitHub Repo</th><td><input class="regular-text" value="https://github.com/celebisg/celebiwaf.git" readonly><p class="description">Eklenti paketi ve manifest bu repo yapısına göre hazırlanmıştır.</p></td></tr>
+<tr><th>Manifest URL</th><td><input id="version-manifest-url" class="regular-text" value="<?php echo esc_attr(get_option('celebi_waf_update_manifest_url','https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json')); ?>" placeholder="https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json"><p class="description">Örnek: https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json</p></td></tr>
+</table>
+<div class="version-actions"><button class="button" id="save-version-manifest">Manifest URL Kaydet</button><button class="button button-primary" id="check-version-update">Sürümü Kontrol Et</button><button class="button button-secondary" id="install-version-update" disabled>Güncellemeyi Yükle</button></div>
+<div class="celebi-result version-result" id="version-update-result">Sayfa açıldığında otomatik kontrol yapılır. Sonucu burada göreceksiniz.</div>
 </div>
 <div class="celebi-grid version-grid">
-  <div class="celebi-panel"><h2>Çalışma Sistemi</h2><ul class="feature-list"><li>GitHub raw manifest JSON okunur.</li><li>Kurulu sürüm ile manifestteki son sürüm karşılaştırılır.</li><li>Yeni sürüm varsa yöneticiye uyarı gösterilir.</li><li>Paket URL doğrulanır, indirilir ve WordPress dosya sistemiyle yüklenir.</li><li>Plugin adı ve paket sürümü kontrol edilerek yanlış paket riski azaltılır.</li></ul></div>
-  <div class="celebi-panel"><h2>Beklenen Manifest Formatı</h2><textarea class="large-text code" rows="12" readonly>{
+<div class="celebi-panel"><h2>Beklenen Manifest Formatı</h2><pre>{
   "name": "CELEBI WAF",
-  "version": "1.0.1",
-  "repo_url": "https://github.com/celebisg/celebiwaf.git",
+  "slug": "celebi-waf",
+  "version": "1.0.3",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
-  "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
-  "requires_php": "7.4",
-  "requires_wp": "5.8",
-  "changelog": ["GitHub manifest tabanlı sürüm kontrolü", "Güvenli paket doğrulama"]
-}</textarea></div>
+  "package_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip"
+}</pre></div>
+<div class="celebi-panel"><h2>Kontrol Mantığı</h2><ul><li>Kurulu sürüm ile manifest içindeki version karşılaştırılır.</li><li>Manifest sürümü daha yüksekse uyarı ve yükleme butonu aktif olur.</li><li>Yanıtlar cache bypass parametresiyle alınır.</li><li>Paket içinde celebi-waf.php ve Plugin Name doğrulanır.</li></ul></div>
 </div>
 </div>
 <?php }

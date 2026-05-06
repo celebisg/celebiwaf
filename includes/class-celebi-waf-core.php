@@ -336,21 +336,60 @@ class CELEBI_WAF_Core {
     private function read_update_manifest() {
         $url = $this->normalize_manifest_url(get_option('celebi_waf_update_manifest_url', $this->default_update_manifest_url()));
         if (!$url) { return new WP_Error('celebi_manifest_url', 'Manifest URL geçersiz.'); }
-        $response = wp_remote_get($url, ['timeout'=>12, 'redirection'=>2, 'limit_response_size'=>1048576]);
+        $request_url = add_query_arg('cwaf_cache_bust', time(), $url);
+        $response = wp_remote_get($request_url, [
+            'timeout' => 20,
+            'redirection' => 5,
+            'limit_response_size' => 1048576,
+            'headers' => [
+                'Accept' => 'application/json,text/plain,*/*',
+                'Cache-Control' => 'no-cache',
+                'Pragma' => 'no-cache',
+                'User-Agent' => 'CELEBI-WAF-Updater/' . CELEBI_WAF_VERSION . '; ' . home_url('/')
+            ]
+        ]);
         if (is_wp_error($response)) { return $response; }
         $code = intval(wp_remote_retrieve_response_code($response));
-        if ($code < 200 || $code >= 300) { return new WP_Error('celebi_manifest_http', 'Manifest HTTP yanıt kodu: ' . $code); }
-        $body = wp_remote_retrieve_body($response);
+        if ($code < 200 || $code >= 300) { return new WP_Error('celebi_manifest_http', 'Manifest HTTP yanıt kodu: ' . $code . ' URL: ' . $url); }
+        $body = trim(wp_remote_retrieve_body($response));
         $json = json_decode($body, true);
-        if (!is_array($json) || empty($json['version'])) { return new WP_Error('celebi_manifest_format', 'Manifest formatı geçersiz.'); }
+        if (!is_array($json) || empty($json['version'])) {
+            return new WP_Error('celebi_manifest_format', 'Manifest formatı geçersiz veya version alanı yok. İlk 120 karakter: ' . substr(wp_strip_all_tags($body), 0, 120));
+        }
+        $json['name'] = sanitize_text_field($json['name'] ?? 'CELEBI WAF');
+        $json['slug'] = sanitize_key($json['slug'] ?? 'celebi-waf');
         $json['version'] = sanitize_text_field($json['version']);
+        $json['manifest_url'] = !empty($json['manifest_url']) ? CELEBI_WAF_Utils::safe_remote_url($json['manifest_url']) : $url;
         $json['download_url'] = !empty($json['download_url']) ? CELEBI_WAF_Utils::safe_remote_url($json['download_url']) : $this->github_repo_zip_url();
         $json['package_url'] = !empty($json['package_url']) ? CELEBI_WAF_Utils::safe_remote_url($json['package_url']) : $json['download_url'];
         $json['repo_url'] = !empty($json['repo_url']) ? esc_url_raw($json['repo_url']) : 'https://github.com/celebisg/celebiwaf.git';
         $json['requires_php'] = sanitize_text_field($json['requires_php'] ?? '7.4');
         $json['requires_wp'] = sanitize_text_field($json['requires_wp'] ?? '5.8');
+        $json['tested_wp'] = sanitize_text_field($json['tested_wp'] ?? '6.5');
+        $json['release_date'] = sanitize_text_field($json['release_date'] ?? current_time('Y-m-d'));
         $json['changelog'] = isset($json['changelog']) && is_array($json['changelog']) ? array_map('sanitize_text_field', $json['changelog']) : [];
         return $json;
+    }
+
+    public function get_update_status($silent = false) {
+        $current = CELEBI_WAF_VERSION;
+        $json = $this->read_update_manifest();
+        if (is_wp_error($json)) { return $json; }
+        $latest = $json['version'];
+        return [
+            'current' => $current,
+            'latest' => $latest,
+            'update_available' => version_compare($latest, $current, '>'),
+            'repo_url' => $json['repo_url'],
+            'manifest_url' => get_option('celebi_waf_update_manifest_url', $this->default_update_manifest_url()),
+            'download_url' => $json['download_url'],
+            'package_url' => $json['package_url'],
+            'requires_php' => $json['requires_php'],
+            'requires_wp' => $json['requires_wp'],
+            'tested_wp' => $json['tested_wp'],
+            'release_date' => $json['release_date'],
+            'changelog' => $json['changelog']
+        ];
     }
 
     public function ajax_save_version_manifest() {
@@ -363,22 +402,9 @@ class CELEBI_WAF_Core {
 
     public function ajax_check_version_update() {
         CELEBI_WAF_Utils::admin_check();
-        $current = CELEBI_WAF_VERSION;
-        $json = $this->read_update_manifest();
-        if (is_wp_error($json)) { wp_send_json_error($json->get_error_message()); }
-        $latest = $json['version'];
-        CELEBI_WAF_Utils::json_success([
-            'current'=>$current,
-            'latest'=>$latest,
-            'update_available'=>version_compare($latest, $current, '>'),
-            'repo_url'=>$json['repo_url'],
-            'manifest_url'=>get_option('celebi_waf_update_manifest_url', $this->default_update_manifest_url()),
-            'download_url'=>$json['download_url'],
-            'package_url'=>$json['package_url'],
-            'requires_php'=>$json['requires_php'],
-            'requires_wp'=>$json['requires_wp'],
-            'changelog'=>$json['changelog']
-        ]);
+        $status = $this->get_update_status();
+        if (is_wp_error($status)) { wp_send_json_error($status->get_error_message()); }
+        CELEBI_WAF_Utils::json_success($status);
     }
 
     public function ajax_install_version_update() {
