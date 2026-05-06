@@ -1,7 +1,7 @@
 {
   "name": "CELEBI WAF",
   "slug": "celebi-waf",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "repo_url": "https://github.com/celebisg/celebiwaf.git",
   "manifest_url": "https://raw.githubusercontent.com/celebisg/celebiwaf/main/celebi-waf-manifest.json",
   "download_url": "https://github.com/celebisg/celebiwaf/archive/refs/heads/main.zip",
@@ -11,9 +11,9 @@
   "tested_wp": "6.5",
   "release_date": "2026-05-06",
   "changelog": [
-    "IP Challenge aktif IP kurallarında Bitiş Süresi Düzenle alanı tüm kural tiplerinde aktif hale getirildi.",
-    "Bitiş süresi doğrudan tarih/saat ile kaydedilebilir, dakika bazlı uzatılabilir veya negatif değerle kısaltılabilir.",
-    "Dashboard ve CELEBI WAF ana ekranında yeni sürüm bulunduğunda görünür uyarı ve Sürüm Güncellemesi butonu eklendi.",
-    "Sürüm kontrol manifest okuma ve güncelleme uyarı akışı yeniden doğrulandı."
+    "Threat Intelligence IP Reputation tablosunda IP, Feed, Reputation ve Aksiyon alanlarının boş görünmesine neden olan veri kaynağı eksikliği giderildi.",
+    "Manuel IP reputation feed ekleme, güncelleme ve silme alanı eklendi.",
+    "IP Reputation listesi manuel feed, WAF olay logları ve mevcut IP testiyle otomatik doldurulur.",
+    "Threat Intelligence karar motoru manuel feed kayıtlarını skorlamaya dahil eder."
   ]
 }

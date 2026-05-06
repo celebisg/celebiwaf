@@ -39,6 +39,12 @@ class CELEBI_WAF_Module_Threat_Intel {
         $score = 0;
         $source = 'local heuristics';
 
+        $manual = self::manual_feed();
+        if (isset($manual[$ip])) {
+            $score = max($score, intval($manual[$ip]['score']));
+            $source = 'manual ip reputation';
+        }
+
         // Basit reputation heuristics: sık görülen scanner ASN/IP feed entegrasyonu için temel.
         $prefix_text = get_option('celebi_waf_threat_bad_prefixes', "45.\n185.\n193.\n198.\n89.248.");
         $badPrefixes = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $prefix_text)));
@@ -62,4 +68,34 @@ class CELEBI_WAF_Module_Threat_Intel {
         set_transient($cache_key, $result, max(5, intval(get_option('celebi_waf_threat_cache_ttl', 360))) * MINUTE_IN_SECONDS);
         return $result;
     }
+
+    public static function manual_feed() {
+        $raw = get_option('celebi_waf_threat_manual_feed', '');
+        $rows = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $raw)));
+        $feed = [];
+        foreach ($rows as $row) {
+            if ($row === '' || strpos($row, '#') === 0) { continue; }
+            $parts = array_map('trim', explode('|', $row));
+            $ip = $parts[0] ?? '';
+            if (!filter_var($ip, FILTER_VALIDATE_IP)) { continue; }
+            $feed[$ip] = [
+                'ip' => $ip,
+                'feed' => sanitize_text_field($parts[1] ?? 'Manual Feed'),
+                'score' => max(0, min(100, intval($parts[2] ?? 90))),
+                'action' => sanitize_text_field($parts[3] ?? 'block'),
+                'note' => sanitize_text_field($parts[4] ?? '')
+            ];
+        }
+        return $feed;
+    }
+
+    public static function action_for_score($score) {
+        $score = intval($score);
+        $block = intval(get_option('celebi_waf_threat_block_threshold', 90));
+        $challenge = intval(get_option('celebi_waf_threat_challenge_threshold', 70));
+        if ($score >= $block) { return 'block'; }
+        if ($score >= $challenge) { return 'challenge'; }
+        return 'monitor';
+    }
+
 }

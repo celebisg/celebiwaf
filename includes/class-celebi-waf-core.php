@@ -43,6 +43,9 @@ class CELEBI_WAF_Core {
         add_action('wp_ajax_celebi_waf_save_bot_ai', [$this, 'ajax_save_bot_ai']);
         add_action('wp_ajax_celebi_waf_save_threat_intel', [$this, 'ajax_save_threat_intel']);
         add_action('wp_ajax_celebi_waf_test_threat_intel', [$this, 'ajax_test_threat_intel']);
+        add_action('wp_ajax_celebi_waf_threat_reputation_rows', [$this, 'ajax_threat_reputation_rows']);
+        add_action('wp_ajax_celebi_waf_add_threat_reputation', [$this, 'ajax_add_threat_reputation']);
+        add_action('wp_ajax_celebi_waf_delete_threat_reputation', [$this, 'ajax_delete_threat_reputation']);
         add_action('wp_ajax_celebi_waf_save_version_manifest', [$this, 'ajax_save_version_manifest']);
         add_action('wp_ajax_celebi_waf_check_version_update', [$this, 'ajax_check_version_update']);
         add_action('wp_ajax_celebi_waf_install_version_update', [$this, 'ajax_install_version_update']);
@@ -313,6 +316,8 @@ class CELEBI_WAF_Core {
         update_option('celebi_waf_threat_block_threshold', $block);
         update_option('celebi_waf_threat_cache_ttl', max(5, min(1440, intval($_POST['cache_ttl'] ?? 360))));
         update_option('celebi_waf_threat_bad_prefixes', sanitize_textarea_field(wp_unslash($_POST['prefixes'] ?? '')));
+        update_option('celebi_waf_threat_manual_feed', sanitize_textarea_field(wp_unslash($_POST['manual_feed'] ?? get_option('celebi_waf_threat_manual_feed', ''))));
+        delete_transient('celebi_waf_threat_rows_cache');
         CELEBI_WAF_Utils::json_success('Threat Intelligence ayarları kaydedildi.');
     }
 
@@ -321,6 +326,94 @@ class CELEBI_WAF_Core {
         $ip = CELEBI_WAF_Utils::ip();
         $rep = CELEBI_WAF_Module_Threat_Intel::reputation($ip);
         CELEBI_WAF_Utils::json_success(['ip'=>$ip, 'score'=>$rep['score'], 'source'=>$rep['source']]);
+    }
+
+
+    public function ajax_threat_reputation_rows() {
+        CELEBI_WAF_Utils::admin_check();
+        global $wpdb;
+        $manual = CELEBI_WAF_Module_Threat_Intel::manual_feed();
+        $rows = [];
+        foreach ($manual as $ip => $item) {
+            $rep = CELEBI_WAF_Module_Threat_Intel::reputation($ip);
+            $score = max(intval($item['score']), intval($rep['score']));
+            $rows[] = [
+                'ip' => $ip,
+                'feed' => $item['feed'],
+                'reputation' => $score,
+                'source' => $rep['source'],
+                'action' => $item['action'] ?: CELEBI_WAF_Module_Threat_Intel::action_for_score($score),
+                'note' => $item['note'],
+                'manual' => 1
+            ];
+        }
+
+        $events_table = CELEBI_WAF_DB::events_table();
+        $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $events_table));
+        if ($exists === $events_table) {
+            $ips = $wpdb->get_results("SELECT ip, MAX(module) module, MAX(action) last_action, MAX(event_time) last_seen, MAX(risk_score) risk_score FROM $events_table WHERE ip <> '' GROUP BY ip ORDER BY MAX(event_time) DESC LIMIT 15", ARRAY_A);
+            foreach ((array) $ips as $event) {
+                $ip = $event['ip'];
+                if (!filter_var($ip, FILTER_VALIDATE_IP) || isset($manual[$ip])) { continue; }
+                $rep = CELEBI_WAF_Module_Threat_Intel::reputation($ip);
+                $score = max(intval($event['risk_score']), intval($rep['score']));
+                $rows[] = [
+                    'ip' => $ip,
+                    'feed' => 'WAF Event Log',
+                    'reputation' => $score,
+                    'source' => $rep['source'],
+                    'action' => CELEBI_WAF_Module_Threat_Intel::action_for_score($score),
+                    'note' => 'Son gorulme: ' . ($event['last_seen'] ?? ''),
+                    'manual' => 0
+                ];
+            }
+        }
+
+        if (empty($rows)) {
+            $ip = CELEBI_WAF_Utils::ip();
+            $rep = CELEBI_WAF_Module_Threat_Intel::reputation($ip);
+            $score = intval($rep['score']);
+            $rows[] = [
+                'ip' => $ip,
+                'feed' => 'Mevcut ziyaretci IP testi',
+                'reputation' => $score,
+                'source' => $rep['source'],
+                'action' => CELEBI_WAF_Module_Threat_Intel::action_for_score($score),
+                'note' => 'Liste bos oldugu icin canli test satiri gosteriliyor.',
+                'manual' => 0
+            ];
+        }
+        CELEBI_WAF_Utils::json_success(array_slice($rows, 0, 40));
+    }
+
+    public function ajax_add_threat_reputation() {
+        CELEBI_WAF_Utils::admin_check();
+        $ip = sanitize_text_field(wp_unslash($_POST['ip'] ?? ''));
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) { CELEBI_WAF_Utils::json_error('Gecerli bir IP adresi girin.'); }
+        $feed = sanitize_text_field(wp_unslash($_POST['feed'] ?? 'Manual Feed'));
+        $score = max(0, min(100, intval($_POST['score'] ?? 90)));
+        $action = sanitize_text_field(wp_unslash($_POST['rep_action'] ?? CELEBI_WAF_Module_Threat_Intel::action_for_score($score)));
+        if (!in_array($action, ['monitor','challenge','block'], true)) { $action = CELEBI_WAF_Module_Threat_Intel::action_for_score($score); }
+        $note = sanitize_text_field(wp_unslash($_POST['note'] ?? ''));
+        $manual = CELEBI_WAF_Module_Threat_Intel::manual_feed();
+        $manual[$ip] = ['ip'=>$ip, 'feed'=>$feed, 'score'=>$score, 'action'=>$action, 'note'=>$note];
+        $lines = [];
+        foreach ($manual as $item) { $lines[] = $item['ip'].'|'.$item['feed'].'|'.$item['score'].'|'.$item['action'].'|'.$item['note']; }
+        update_option('celebi_waf_threat_manual_feed', implode("\n", $lines));
+        delete_transient('celebi_waf_rep_' . md5($ip));
+        CELEBI_WAF_Utils::json_success('IP reputation kaydi eklendi/guncellendi.');
+    }
+
+    public function ajax_delete_threat_reputation() {
+        CELEBI_WAF_Utils::admin_check();
+        $ip = sanitize_text_field(wp_unslash($_POST['ip'] ?? ''));
+        $manual = CELEBI_WAF_Module_Threat_Intel::manual_feed();
+        if (isset($manual[$ip])) { unset($manual[$ip]); }
+        $lines = [];
+        foreach ($manual as $item) { $lines[] = $item['ip'].'|'.$item['feed'].'|'.$item['score'].'|'.$item['action'].'|'.$item['note']; }
+        update_option('celebi_waf_threat_manual_feed', implode("\n", $lines));
+        delete_transient('celebi_waf_rep_' . md5($ip));
+        CELEBI_WAF_Utils::json_success('IP reputation kaydi silindi.');
     }
 
     private function default_update_manifest_url() {

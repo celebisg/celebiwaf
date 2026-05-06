@@ -28,8 +28,21 @@ $(document).on('click','#save-bot-ai',()=>{$.post(CELEBIWAF.ajax,{action:'celebi
 $(document).on('click','#load-edge-rules',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_edge_rules',nonce:CELEBIWAF.nonce},r=>{if(r.success){$('#edge-rules-output').val(r.data.rules);$('#edge-result').show().text('Kural oluşturuldu. Dosya: '+r.data.file);}else{$('#edge-result').show().text(r.data);}});});
 
 
-$(document).on('click','#save-threat-intel',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_save_threat_intel',nonce:CELEBIWAF.nonce,enabled:$('#threat-enabled').is(':checked')?1:0,feed_url:$('#threat-feed-url').val(),challenge_threshold:$('#threat-challenge-threshold').val(),block_threshold:$('#threat-block-threshold').val(),cache_ttl:$('#threat-cache-ttl').val(),prefixes:$('#threat-prefixes').val()},r=>$('#threat-intel-result').show().text(r.success?r.data:r.data));});
+$(document).on('click','#save-threat-intel',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_save_threat_intel',nonce:CELEBIWAF.nonce,enabled:$('#threat-enabled').is(':checked')?1:0,feed_url:$('#threat-feed-url').val(),challenge_threshold:$('#threat-challenge-threshold').val(),block_threshold:$('#threat-block-threshold').val(),cache_ttl:$('#threat-cache-ttl').val(),prefixes:$('#threat-prefixes').val(),manual_feed:$('#threat-manual-feed').val()},r=>$('#threat-intel-result').show().text(r.success?r.data:r.data));});
 $(document).on('click','#test-threat-intel',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_test_threat_intel',nonce:CELEBIWAF.nonce},r=>$('#threat-intel-result').show().text(r.success?JSON.stringify(r.data,null,2):r.data));});
+
+function loadThreatReputation(){
+  $.post(CELEBIWAF.ajax,{action:'celebi_waf_threat_reputation_rows',nonce:CELEBIWAF.nonce},r=>{
+    if(!r.success){$('#threat-reputation-rows').html('<tr><td colspan="6">'+esc(r.data)+'</td></tr>');return;}
+    let rows=r.data||[];
+    $('#threat-reputation-rows').html(rows.map(x=>'<tr><td>'+esc(x.ip)+'</td><td>'+esc(x.feed)+'</td><td><strong>'+esc(x.reputation)+'</strong><br><small>'+esc(x.source||'')+'</small></td><td><span class="pill '+esc(x.action)+'">'+esc(x.action)+'</span></td><td>'+esc(x.note||'')+'</td><td>'+(x.manual==1?'<button class="button delete-threat-reputation" data-ip="'+esc(x.ip)+'">Sil</button>':'<button class="button" disabled>Log kaydi</button>')+'</td></tr>').join('')||'<tr><td colspan="6">Henüz kayıt yok. Manuel IP ekleyin veya WAF loglarının oluşmasını bekleyin.</td></tr>');
+  });
+}
+$(document).on('click','#load-threat-reputation',loadThreatReputation);
+$(document).on('click','#add-threat-reputation',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_add_threat_reputation',nonce:CELEBIWAF.nonce,ip:$('#threat-rep-ip').val(),feed:$('#threat-rep-feed').val(),score:$('#threat-rep-score').val(),rep_action:$('#threat-rep-action').val(),note:$('#threat-rep-note').val()},r=>{$('#threat-intel-result').show().text(r.success?r.data:r.data);loadThreatReputation();});});
+$(document).on('click','.delete-threat-reputation',function(){$.post(CELEBIWAF.ajax,{action:'celebi_waf_delete_threat_reputation',nonce:CELEBIWAF.nonce,ip:$(this).data('ip')},r=>{$('#threat-intel-result').show().text(r.success?r.data:r.data);loadThreatReputation();});});
+$(function(){if($('#threat-reputation-rows').length)loadThreatReputation();});
+
 $(document).on('click','#save-version-manifest',()=>{$.post(CELEBIWAF.ajax,{action:'celebi_waf_save_version_manifest',nonce:CELEBIWAF.nonce,manifest_url:$('#version-manifest-url').val()},r=>$('#version-update-result').show().text(r.success?r.data:r.data));});
 function celebiRenderVersionResult(d){
   let hasUpdate=!!d.update_available;
